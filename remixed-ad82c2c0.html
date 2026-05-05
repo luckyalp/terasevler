@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elektrik Hesaplayıcı · Gökova</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --border: #2a2f3f;
+    --accent: #e8c84a;
+    --accent2: #4a9de8;
+    --text: #e8e4dc;
+    --muted: #6b7280;
+    --danger: #e85a4a;
+    --success: #4ae8a0;
+    --active-a: rgba(74,157,232,0.12);
+    --active-b: rgba(232,200,74,0.10);
+    --mono: 'DM Mono', monospace;
+    --serif: 'Playfair Display', serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  header {
+    padding: 40px 24px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  header h1 {
+    font-family: var(--serif);
+    font-size: 28px;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  header span {
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 0 16px; }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 32px 0 8px;
+  }
+
+  /* ── INSTRUCTION BOX ── */
+  .instruction-box {
+    background: rgba(232,200,74,0.06);
+    border: 1px solid rgba(232,200,74,0.25);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .instruction-box strong { color: var(--accent); }
+  .instruction-box .step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .instruction-box .step-num {
+    background: var(--accent);
+    color: #0f1117;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ── TWO PATHS ── */
+  .paths-wrapper {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 12px;
+    align-items: start;
+    margin-bottom: 16px;
+  }
+  @media(max-width:600px){
+    .paths-wrapper { grid-template-columns: 1fr; }
+    .path-divider { display: none; }
+  }
+
+  .path-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: border-color .3s, background .3s;
+    position: relative;
+  }
+  .path-card.active-a {
+    border-color: var(--accent2);
+    background: var(--active-a);
+  }
+  .path-card.active-b {
+    border-color: var(--accent);
+    background: var(--active-b);
+  }
+  .path-card.dimmed {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
+  .path-title {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .path-title .badge {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    letter-spacing: 1px;
+  }
+  .path-card.active-a .badge-a { background: var(--accent2); color: #0f1117; }
+  .path-card.active-b .badge-b { background: var(--accent); color: #0f1117; }
+  .badge-a { background: rgba(74,157,232,0.2); color: var(--accent2); }
+  .badge-b { background: rgba(232,200,74,0.2); color: var(--accent); }
+
+  .path-desc {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .path-divider {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding-top: 40px;
+  }
+  .path-divider::before,
+  .path-divider::after {
+    content:'';
+    display:block;
+    width:1px;
+    height:30px;
+    background: var(--border);
+  }
+  .path-divider span {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    writing-mode: vertical-lr;
+    text-transform: uppercase;
+    padding: 4px 0;
+  }
+
+  /* ── FIELD ── */
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .field input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 15px;
+    padding: 10px 12px;
+    width: 100%;
+    transition: border-color .2s;
+    outline: none;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .field .hint { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+  /* total kwh card */
+  .total-kwh-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #computed-price {
+    font-size: 12px;
+    color: var(--accent2);
+    margin-top: 2px;
+    min-height: 18px;
+  }
+
+  /* ── PARTIES GRID ── */
+  #parties-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+  }
+
+  .party-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color .2s;
+  }
+  .party-card:hover { border-color: var(--muted); }
+  .party-card .party-name input[type=text] {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    font-size: 13px;
+    padding: 2px 4px;
+    flex: 1;
+    color: var(--text);
+    font-family: var(--mono);
+    outline: none;
+    width: 100%;
+  }
+  .party-card .party-name input[type=text]:focus { border-bottom-color: var(--accent); }
+  .party-card .kwh-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .party-card .kwh-row input[type=number] {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 7px 10px;
+    width: 100%;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .party-card .kwh-row input[type=number]:focus { border-color: var(--accent); }
+  .party-card .kwh-label {
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .party-card .result-line {
+    font-size: 12px;
+    color: var(--success);
+    min-height: 16px;
+    text-align: right;
+  }
+  .party-card .remove-btn {
+    align-self: flex-end;
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+    transition: color .2s;
+  }
+  .party-card .remove-btn:hover { color: var(--danger); }
+
+  .controls-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  button.add-btn {
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+    padding: 9px 18px;
+    transition: all .2s;
+  }
+  button.add-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── SUMMARY ── */
+  #summary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-top: 16px;
+    overflow: hidden;
+  }
+  #summary table { width: 100%; border-collapse: collapse; }
+  #summary thead th {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  #summary tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background .15s;
+  }
+  #summary tbody tr:last-child { border-bottom: none; }
+  #summary tbody tr:hover { background: rgba(255,255,255,.03); }
+  #summary td { padding: 11px 16px; font-size: 13px; }
+  #summary td.amount { text-align: right; color: var(--success); font-size: 14px; }
+  #summary td.pct { color: var(--muted); font-size: 12px; }
+  #summary tfoot td {
+    padding: 13px 16px;
+    font-size: 13px;
+    border-top: 1px solid var(--accent);
+    color: var(--accent);
+  }
+  #summary tfoot td.total-amount { text-align: right; font-size: 16px; }
+
+  #warn {
+    font-size: 12px;
+    color: var(--danger);
+    margin-top: 10px;
+    min-height: 18px;
+  }
+
+  .reset-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 9px 16px;
+    transition: all .2s;
+    margin-top: 20px;
+  }
+  .reset-btn:hover { color: var(--danger); border-color: var(--danger); }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Elektrik Hesaplayıcı</h1>
+  <span>Bina Paylaşımı</span>
+</header>
+
+<div class="container">
+
+  <!-- INSTRUCTIONS -->
+  <p class="section-label">Nasıl kullanılır</p>
+  <div class="instruction-box">
+    <strong>Sadece bir yol seçin</strong> — iki seçenek var, ikisini birden doldurmayın:
+    <div class="step">
+      <div class="step-num">A</div>
+      <div><strong>Fatura tutarını biliyorsanız:</strong> Sol taraftaki "Toplam Fatura Tutarı" alanını + aşağıdaki "Bina Toplam Tüketimi" alanını doldurun. Birim fiyat otomatik hesaplanır.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">B</div>
+      <div><strong>kWh birim fiyatını biliyorsanız:</strong> Sadece sağ taraftaki "kWh Birim Fiyatı" alanını doldurun. Yeterli.</div>
+    </div>
+    <div style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(232,200,74,0.15); font-size:11px; color:var(--muted)">
+      Ardından her daire için sayaç tüketimini (kWh) girin. Her dairenin ödeyeceği tutar anında hesaplanır.
+    </div>
+  </div>
+
+  <!-- PRICE PATHS -->
+  <p class="section-label">Fiyat Bilgisi</p>
+  <div class="paths-wrapper">
+
+    <!-- PATH A -->
+    <div class="path-card" id="card-a">
+      <div class="path-title">
+        <div class="step-num" style="background:var(--accent2);color:#0f1117;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">A</div>
+        <span style="color:var(--accent2)">Fatura tutarından</span>
+        <span class="badge badge-a">Önerilen</span>
+      </div>
+      <div class="path-desc">Fatura elinizde varsa: toplam tutarı girin. Birim fiyat otomatik çıkar.</div>
+      <div class="field">
+        <label>Toplam Fatura Tutarı (₺)</label>
+        <input type="number" id="total-bill" placeholder="örn. 4800" min="0" step="0.01">
+        <span class="hint">Faturadaki toplam tutar</span>
+      </div>
+    </div>
+
+    <div class="path-divider"><span>veya</span></div>
+
+    <!-- PATH B -->
+    <div class="path-card" id="card-b">
+      <div class="path-title">
+        <div class="step-num" style="background:var(--accent);color:#0f1117;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">B</div>
+        <span style="color:var(--accent)">Birim fiyattan</span>
+        <span class="badge badge-b">TEDAŞ tarifi</span>
+      </div>
+      <div class="path-desc">kWh fiyatını zaten biliyorsanız direkt buraya girin. Fatura tutarına gerek yok.</div>
+      <div class="field">
+        <label>kWh Birim Fiyatı (₺)</label>
+        <input type="number" id="kwh-price" placeholder="örn. 3.85" min="0" step="0.0001">
+        <span class="hint">TEDAŞ güncel tarifi</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOTAL KWH (shared) -->
+  <div class="total-kwh-card">
+    <div class="field">
+      <label>Bina Toplam Tüketimi (kWh) <span style="color:var(--muted);font-size:10px;letter-spacing:1px">— A seçeneğinde gerekli</span></label>
+      <input type="number" id="total-kwh" placeholder="örn. 1245" min="0" step="0.01">
+      <span class="hint">Ana sayaçtaki toplam kWh — sadece A seçeneğinde doldurun</span>
+    </div>
+    <div id="computed-price"></div>
+  </div>
+
+  <!-- PARTIES -->
+  <p class="section-label">Daireler</p>
+  <div id="parties-grid"></div>
+  <div class="controls-row">
+    <button class="add-btn" onclick="addParty()">＋ Daire ekle</button>
+  </div>
+
+  <div id="warn"></div>
+
+  <!-- SUMMARY -->
+  <p class="section-label">Hesap Özeti</p>
+  <div id="summary">
+    <table>
+      <thead>
+        <tr>
+          <th>Daire</th>
+          <th>kWh</th>
+          <th class="pct" style="text-align:right">Pay</th>
+          <th style="text-align:right">Tutar (₺)</th>
+        </tr>
+      </thead>
+      <tbody id="summary-body"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2" style="color:var(--muted);font-size:12px;">TOPLAM</td>
+          <td class="pct" style="text-align:right" id="sum-pct"></td>
+          <td class="total-amount" id="sum-total">—</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <button class="reset-btn" onclick="resetAll()">↺ Sıfırla</button>
+
+</div>
+
+<script>
+let parties = [];
+let idCounter = 0;
+
+function addParty(name='', kwh='') {
+  const id = ++idCounter;
+  parties.push({ id, name, kwh });
+  renderParties();
+  recalc();
+}
+
+function removeParty(id) {
+  parties = parties.filter(p => p.id !== id);
+  renderParties();
+  recalc();
+}
+
+function renderParties() {
+  const grid = document.getElementById('parties-grid');
+  grid.innerHTML = '';
+  parties.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = 'party-card';
+    card.id = 'card-' + p.id;
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+        <input type="text" placeholder="Daire ${i+1}" value="${p.name}"
+          class="party-name" oninput="updateName(${p.id}, this.value)"
+          style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:13px;padding:2px 4px;flex:1;outline:none;">
+        <button class="remove-btn" onclick="removeParty(${p.id})" title="Sil">×</button>
+      </div>
+      <div class="kwh-row">
+        <input type="number" placeholder="0" min="0" step="0.01"
+          value="${p.kwh}" oninput="updateKwh(${p.id}, this.value)">
+        <span class="kwh-label">kWh</span>
+      </div>
+      <div class="result-line" id="result-${p.id}"></div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function updateName(id, val) {
+  const p = parties.find(x => x.id === id);
+  if (p) p.name = val;
+  recalc();
+}
+
+function updateKwh(id, val) {
+  const p = parties.find(x => x.id === id);
+  if (p) p.kwh = val;
+  recalc();
+}
+
+function getPrice() {
+  const bill   = parseFloat(document.getElementById('total-bill').value) || 0;
+  const total  = parseFloat(document.getElementById('total-kwh').value) || 0;
+  const direct = parseFloat(document.getElementById('kwh-price').value) || 0;
+  if (direct > 0) return direct;
+  if (bill > 0 && total > 0) return bill / total;
+  return 0;
+}
+
+function updatePathHighlight() {
+  const bill   = parseFloat(document.getElementById('total-bill').value) || 0;
+  const direct = parseFloat(document.getElementById('kwh-price').value) || 0;
+  const cardA  = document.getElementById('card-a');
+  const cardB  = document.getElementById('card-b');
+
+  cardA.classList.remove('active-a', 'dimmed');
+  cardB.classList.remove('active-b', 'dimmed');
+
+  if (bill > 0 && direct === 0) {
+    cardA.classList.add('active-a');
+    cardB.classList.add('dimmed');
+  } else if (direct > 0 && bill === 0) {
+    cardB.classList.add('active-b');
+    cardA.classList.add('dimmed');
+  } else if (bill > 0 && direct > 0) {
+    // both filled — B wins, warn visually
+    cardB.classList.add('active-b');
+  }
+}
+
+function recalc() {
+  updatePathHighlight();
+
+  const price    = getPrice();
+  const bill     = parseFloat(document.getElementById('total-bill').value) || 0;
+  const totalKwh = parseFloat(document.getElementById('total-kwh').value) || 0;
+  const directPx = parseFloat(document.getElementById('kwh-price').value) || 0;
+
+  const cpEl = document.getElementById('computed-price');
+  if (bill > 0 && totalKwh > 0 && directPx === 0) {
+    cpEl.textContent = `→ Hesaplanan birim fiyat: ${(bill/totalKwh).toFixed(4)} ₺/kWh`;
+  } else if (bill > 0 && directPx > 0) {
+    cpEl.textContent = `⚠ İki alan da dolu — birim fiyat (${directPx} ₺) kullanılıyor. Fatura tutarını temizleyin.`;
+    cpEl.style.color = 'var(--danger)';
+  } else {
+    cpEl.textContent = '';
+    cpEl.style.color = 'var(--accent2)';
+  }
+
+  const partySum = parties.reduce((s, p) => s + (parseFloat(p.kwh) || 0), 0);
+  const warn = document.getElementById('warn');
+
+  if (totalKwh > 0 && partySum > totalKwh + 0.01) {
+    warn.textContent = `⚠ Daire toplamı (${fmt(partySum)} kWh), bina toplam tüketimini (${fmt(totalKwh)} kWh) aşıyor`;
+  } else {
+    warn.textContent = '';
+  }
+
+  parties.forEach(p => {
+    const kwh = parseFloat(p.kwh) || 0;
+    const el = document.getElementById('result-' + p.id);
+    if (!el) return;
+    el.textContent = (price > 0 && kwh > 0) ? `→ ${fmtTL(kwh * price)}` : '';
+  });
+
+  const tbody = document.getElementById('summary-body');
+  tbody.innerHTML = '';
+  let totalAmount = 0;
+  parties.forEach((p, i) => {
+    const kwh = parseFloat(p.kwh) || 0;
+    const amount = price > 0 ? kwh * price : 0;
+    totalAmount += amount;
+    const pct = partySum > 0 ? (kwh / partySum * 100).toFixed(1) : '—';
+    const label = p.name || `Daire ${i+1}`;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${label}</td>
+      <td>${fmt(kwh)}</td>
+      <td class="pct" style="text-align:right">${pct}%</td>
+      <td class="amount">${price > 0 ? fmtTL(amount) : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('sum-pct').textContent = partySum > 0 ? '100%' : '';
+  document.getElementById('sum-total').textContent =
+    price > 0 && parties.length > 0 ? fmtTL(totalAmount) : '—';
+}
+
+function fmt(n) {
+  return n % 1 === 0 ? n.toFixed(0) : n.toFixed(2);
+}
+function fmtTL(n) {
+  return n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺';
+}
+
+function resetAll() {
+  if (!confirm('Tüm veriler silinsin mi?')) return;
+  parties = [];
+  idCounter = 0;
+  ['total-bill','total-kwh','kwh-price'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  renderParties();
+  recalc();
+}
+
+['total-bill','total-kwh','kwh-price'].forEach(id => {
+  document.getElementById(id).addEventListener('input', recalc);
+});
+
+// Init
+for (let i = 1; i <= 14; i++) addParty(`Daire ${i}`, '');
+</script>
+</body>
+</html>
