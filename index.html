@@ -59,6 +59,8 @@
   }
   .unit-card:focus-within { border-color:var(--accent); }
   .unit-card.has-result { border-color:#bbf7d0; background:var(--success-bg); }
+  .unit-card.has-warning { border-color:#fca5a5; background:#fef2f2; }
+  .unit-warn { font-size:11px; color:var(--red); font-weight:600; display:none; margin-top:2px; }
   .unit-name { font-size:13px; font-weight:600; color:var(--muted); }
   .unit-right { display:flex; flex-direction:column; gap:3px; }
   .unit-right input { border:none; background:transparent; font-size:14px; font-weight:500; padding:2px 0; outline:none; width:100%; }
@@ -203,6 +205,9 @@
 
     <!-- COMPUTED PRICE DISPLAY -->
     <div id="computed-price"></div>
+    <div id="price-missing-hint" style="display:none;margin-top:8px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 12px;font-size:12px;color:var(--red);font-weight:500">
+      ⚠ Sayaç değerleri girildi ama fiyat bilgisi eksik! Lütfen yukarıdaki alanları doldurun.
+    </div>
 
     <!-- DEBUG BOX -->
     <div id="debug-box" style="display:none;margin-top:10px;background:#f8f9fa;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;font-family:monospace;color:#374151;line-height:1.8"></div>
@@ -302,6 +307,7 @@ const units = [
 ];
 
 let prevVals = {};
+let avgKwh = {}; // daire_id → average monthly consumption
 
 // ── SAFE NUMBER PARSER ──
 // Handles both "48000" and "48.000" (Turkish thousand-sep) and "48,5" (Turkish decimal)
@@ -387,6 +393,7 @@ function renderUnits(){
           <input type="number" id="u-${u.id}" placeholder="Sayaç" min="0" step="any" oninput="recalc()">
           <div class="unit-prev" id="up-${u.id}"></div>
           <div class="unit-diff" id="ud-${u.id}"></div>
+          <div class="unit-warn" id="uw-${u.id}"></div>
         </div>`;
       grid.appendChild(d);
     });
@@ -400,8 +407,23 @@ async function loadPrev(){
   try{
     const data = await api('sayac_okumalari?select=daire_id,sayac_degeri,tarih&order=tarih.desc&limit=300');
     prevVals={};
+    // Group all readings per daire to compute average consumption
+    const allByDaire = {};
     data.forEach(r=>{
       if(!prevVals[r.daire_id]) prevVals[r.daire_id]={val:parseFloat(r.sayac_degeri),tarih:r.tarih};
+      if(!allByDaire[r.daire_id]) allByDaire[r.daire_id]=[];
+      allByDaire[r.daire_id].push(parseFloat(r.sayac_degeri));
+    });
+    // Compute avg monthly consumption (diff between consecutive readings)
+    avgKwh={};
+    Object.entries(allByDaire).forEach(([did, vals])=>{
+      if(vals.length < 2) return;
+      const diffs=[];
+      for(let i=0;i<vals.length-1;i++) {
+        const d=vals[i]-vals[i+1]; // desc order so newer first
+        if(d>0) diffs.push(d);
+      }
+      if(diffs.length) avgKwh[did]=diffs.reduce((a,b)=>a+b,0)/diffs.length;
     });
     let count=0;
     units.forEach(u=>{
@@ -490,7 +512,7 @@ function recalc(){
     dbg.style.display = 'none';
   }
 
-  // ── PER-UNIT DIFFS ──
+  // ── PER-UNIT DIFFS + PLAUSIBILITY ──
   const unitKwhs = [];
   units.forEach(u=>{
     const cur  = getVal('u-'+u.id);
@@ -499,10 +521,27 @@ function recalc(){
     if (cur > 0 && prev > 0 && cur >= prev) diff = cur - prev;
     else if (cur > 0 && !prev) diff = cur;
     unitKwhs.push(diff);
+
     const diffEl = document.getElementById('ud-'+u.id);
     const card   = document.getElementById('uc-'+u.id);
-    if (diffEl) diffEl.textContent = diff > 0 ? `Fark: ${diff.toFixed(2)} kWh` : '';
-    if (card)   card.classList.toggle('has-result', diff > 0 && price > 0);
+    const warnEl = document.getElementById('uw-'+u.id);
+
+    // ── Plausibility checks ──
+    let warning = '';
+    if (cur > 0 && prev > 0 && cur < prev) {
+      warning = '⚠ Yeni değer eski değerden küçük!';
+    } else if (diff > 0 && avgKwh[u.did] > 0 && diff > avgKwh[u.did] * 3) {
+      warning = `⚠ Ortalamadan 3x yüksek (ort. ${fmt(avgKwh[u.did])} kWh)`;
+    } else if (diff > 500) {
+      warning = `⚠ Çok yüksek tüketim — doğru mu?`;
+    }
+
+    if (diffEl) diffEl.textContent = diff > 0 ? `Fark: ${fmt(diff)} kWh` : '';
+    if (warnEl) { warnEl.textContent = warning; warnEl.style.display = warning ? 'block' : 'none'; }
+    if (card) {
+      card.classList.toggle('has-result', diff > 0 && price > 0 && !warning);
+      card.classList.toggle('has-warning', !!warning);
+    }
   });
 
   const unitSum  = unitKwhs.reduce((a,b)=>a+b, 0);
@@ -522,6 +561,16 @@ function recalc(){
       (price > 0 && sharedKwh > 0) ? fmtTL(sharedKwh * price / PARTIES) : '— ₺';
   } else {
     mBox.style.display = 'none';
+  }
+
+  // ── STEP 2 HIGHLIGHT if missing ──
+  const step2card = document.querySelector('#method-a')?.closest('.card');
+  if (step2card) {
+    const missingPrice = price === 0 && unitSum > 0;
+    step2card.style.borderColor = missingPrice ? 'var(--red)' : '';
+    step2card.style.boxShadow = missingPrice ? '0 0 0 3px #fee2e2' : '';
+    const hint = document.getElementById('price-missing-hint');
+    if (hint) hint.style.display = missingPrice ? 'block' : 'none';
   }
 
   // ── SUMMARY ──
@@ -569,7 +618,46 @@ function recalc(){
 }
 
 async function saveAll(){
-  const tarih = new Date().toISOString().split('T')[0]; // today automatically
+  // ── Check for warnings before saving ──
+  const warnings = [];
+  units.forEach(u => {
+    const cur  = getVal('u-'+u.id);
+    const prev = prevVals[u.did]?.val || 0;
+    if (!cur) return;
+    if (cur < prev) warnings.push(`${u.id}: Yeni değer (${fmt(cur)}) < Eski değer (${fmt(prev)})`);
+    else {
+      const diff = cur - prev;
+      if (avgKwh[u.did] > 0 && diff > avgKwh[u.did] * 3)
+        warnings.push(`${u.id}: ${fmt(diff)} kWh — ortalamanın 3x üzerinde`);
+      else if (diff > 500)
+        warnings.push(`${u.id}: ${fmt(diff)} kWh — çok yüksek`);
+    }
+  });
+
+  if (warnings.length > 0) {
+    const msg = '⚠ Aşağıdaki değerler şüpheli görünüyor:\n\n' +
+      warnings.join('\n') +
+      '\n\nYine de kaydetmek istiyor musunuz?';
+    if (!confirm(msg)) return;
+  }
+
+  // ── Check price is set ──
+  const price = getPrice();
+  if (price === 0) {
+    alert('⚠ Lütfen önce fiyat bilgisini girin!\n\nYa Toplam Fatura Tutarı + Bina Toplam Tüketimi\nYa da kWh Birim Fiyatı girilmeli.');
+    document.getElementById('total-bill').focus();
+    return;
+  }
+
+  // ── Check nothing is empty ──
+  const filled = units.filter(u => getVal('u-'+u.id) > 0);
+  if (filled.length === 0) { toast('Hiç sayaç değeri girilmedi','err'); return; }
+  if (filled.length < units.length) {
+    const missing = units.filter(u => !getVal('u-'+u.id)).map(u=>u.id).join(', ');
+    if (!confirm(`Şu daireler boş: ${missing}\n\nDevam edilsin mi?`)) return;
+  }
+
+  const tarih = new Date().toISOString().split('T')[0];
   let saved = 0;
   for (const u of units) {
     const cur = getVal('u-'+u.id);
