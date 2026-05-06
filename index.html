@@ -3,658 +3,691 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Elektrik Hesaplayıcı · Gökova</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<title>Elektrik Hesaplayıcı</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0f1117;
-    --surface: #181c27;
-    --border: #2a2f3f;
-    --accent: #e8c84a;
-    --accent2: #4a9de8;
-    --text: #e8e4dc;
-    --muted: #6b7280;
-    --danger: #e85a4a;
-    --success: #4ae8a0;
-    --active-a: rgba(74,157,232,0.12);
-    --active-b: rgba(232,200,74,0.10);
-    --mono: 'DM Mono', monospace;
-    --serif: 'Playfair Display', serif;
+    --bg:#f0f2f5; --white:#ffffff; --border:#e2e5ea;
+    --text:#1a1d23; --muted:#6b7280; --accent:#2563eb;
+    --green:#16a34a; --orange:#ea580c; --red:#dc2626;
+    --success-bg:#f0fdf4; --warn-bg:#fff7ed;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 14px;
-    min-height: 100vh;
-    padding: 0 0 60px;
-  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; font-size:14px; min-height:100vh; }
 
-  header {
-    padding: 40px 24px 24px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: baseline;
-    gap: 16px;
-    flex-wrap: wrap;
+  .top-bar {
+    background:var(--accent); color:#fff; padding:16px 20px;
+    display:flex; align-items:center; justify-content:space-between;
   }
-  header h1 {
-    font-family: var(--serif);
-    font-size: 28px;
-    color: var(--accent);
-    letter-spacing: -0.5px;
-  }
-  header span {
-    color: var(--muted);
-    font-size: 12px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
+  .top-bar h1 { font-size:17px; font-weight:600; }
+  .top-bar .conn { font-size:11px; display:flex; align-items:center; gap:6px; opacity:.85; }
+  .dot { width:7px; height:7px; border-radius:50%; background:#fff; opacity:.4; }
+  .dot.ok { background:#4ade80; opacity:1; }
+  .dot.err { background:#f87171; opacity:1; }
 
-  .container { max-width: 900px; margin: 0 auto; padding: 0 16px; }
+  .page { max-width:680px; margin:0 auto; padding:20px 16px 60px; }
 
-  .section-label {
-    font-size: 10px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin: 32px 0 8px;
-  }
+  .card { background:var(--white); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:16px; }
+  .card-title { font-size:11px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
 
-  /* ── INSTRUCTION BOX ── */
-  .instruction-box {
-    background: rgba(232,200,74,0.06);
-    border: 1px solid rgba(232,200,74,0.25);
-    border-radius: 8px;
-    padding: 14px 16px;
-    margin-bottom: 16px;
-    font-size: 12px;
-    color: var(--text);
-    line-height: 1.7;
-  }
-  .instruction-box strong { color: var(--accent); }
-  .instruction-box .step {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    margin-top: 8px;
-  }
-  .instruction-box .step-num {
-    background: var(--accent);
-    color: #0f1117;
-    font-size: 10px;
-    font-weight: 700;
-    border-radius: 50%;
-    width: 18px;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    margin-top: 1px;
-  }
+  .step-header { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .step-num { width:26px; height:26px; border-radius:50%; background:var(--accent); color:#fff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .step-title { font-size:15px; font-weight:600; }
+  .step-sub { font-size:12px; color:var(--muted); margin-top:1px; }
 
-  /* ── TWO PATHS ── */
-  .paths-wrapper {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    gap: 12px;
-    align-items: start;
-    margin-bottom: 16px;
+  .date-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .date-row label { font-size:12px; color:var(--muted); white-space:nowrap; }
+  select, input[type=number], input[type=date] {
+    border:1px solid var(--border); border-radius:8px; background:#fff;
+    color:var(--text); font-family:'Inter',sans-serif; font-size:14px;
+    padding:9px 12px; outline:none; transition:border-color .2s;
   }
-  @media(max-width:600px){
-    .paths-wrapper { grid-template-columns: 1fr; }
-    .path-divider { display: none; }
-  }
+  select:focus, input:focus { border-color:var(--accent); }
 
-  .path-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    transition: border-color .3s, background .3s;
-    position: relative;
-  }
-  .path-card.active-a {
-    border-color: var(--accent2);
-    background: var(--active-a);
-  }
-  .path-card.active-b {
-    border-color: var(--accent);
-    background: var(--active-b);
-  }
-  .path-card.dimmed {
-    opacity: 0.45;
-    pointer-events: none;
-  }
+  .bill-hint { font-size:12px; color:var(--muted); margin-top:6px; }
+  #computed-price { font-size:13px; color:var(--accent); margin-top:8px; min-height:18px; font-weight:500; }
 
-  .path-title {
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .path-title .badge {
-    font-size: 9px;
-    padding: 2px 6px;
-    border-radius: 3px;
-    letter-spacing: 1px;
-  }
-  .path-card.active-a .badge-a { background: var(--accent2); color: #0f1117; }
-  .path-card.active-b .badge-b { background: var(--accent); color: #0f1117; }
-  .badge-a { background: rgba(74,157,232,0.2); color: var(--accent2); }
-  .badge-b { background: rgba(232,200,74,0.2); color: var(--accent); }
+  .block-label { font-size:11px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin:14px 0 8px; display:flex; align-items:center; gap:8px; }
+  .block-label::after { content:''; flex:1; height:1px; background:var(--border); }
+  .units-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  @media(max-width:420px){ .units-grid { grid-template-columns:1fr; } }
 
-  .path-desc {
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.5;
+  .unit-card {
+    border:1px solid var(--border); border-radius:8px; padding:10px 12px;
+    display:grid; grid-template-columns:36px 1fr;
+    gap:8px; align-items:center; transition:border-color .2s;
   }
+  .unit-card:focus-within { border-color:var(--accent); }
+  .unit-card.has-result { border-color:#bbf7d0; background:var(--success-bg); }
+  .unit-name { font-size:13px; font-weight:600; color:var(--muted); }
+  .unit-right { display:flex; flex-direction:column; gap:3px; }
+  .unit-right input { border:none; background:transparent; font-size:14px; font-weight:500; padding:2px 0; outline:none; width:100%; }
+  .unit-prev { font-size:11px; color:var(--muted); }
+  .unit-prev span { color:var(--accent); font-weight:500; }
+  .unit-diff { font-size:11px; color:var(--green); font-weight:600; }
+  .unit-cost { font-size:13px; font-weight:700; color:var(--green); text-align:right; }
 
-  .path-divider {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding-top: 40px;
+  .musT-box {
+    background:var(--warn-bg); border:1px solid #fed7aa; border-radius:10px;
+    padding:14px 16px; display:flex; justify-content:space-between; align-items:center;
+    flex-wrap:wrap; gap:10px; margin-top:4px;
   }
-  .path-divider::before,
-  .path-divider::after {
-    content:'';
-    display:block;
-    width:1px;
-    height:30px;
-    background: var(--border);
-  }
-  .path-divider span {
-    font-size: 10px;
-    color: var(--muted);
-    letter-spacing: 2px;
-    writing-mode: vertical-lr;
-    text-transform: uppercase;
-    padding: 4px 0;
-  }
+  .musT-left { font-size:13px; color:var(--orange); }
+  .musT-left strong { display:block; font-size:15px; }
+  .musT-right { text-align:right; }
+  .musT-right .per { font-size:12px; color:var(--muted); }
+  .musT-right .val { font-size:18px; font-weight:700; color:var(--orange); }
 
-  /* ── FIELD ── */
-  .field { display: flex; flex-direction: column; gap: 6px; }
-  .field label {
-    font-size: 11px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-  .field input {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 15px;
-    padding: 10px 12px;
-    width: 100%;
-    transition: border-color .2s;
-    outline: none;
-  }
-  .field input:focus { border-color: var(--accent); }
-  .field .hint { font-size: 11px; color: var(--muted); line-height: 1.4; }
+  .sum-table { width:100%; border-collapse:collapse; }
+  .sum-table th { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); padding:6px 8px; text-align:left; border-bottom:2px solid var(--border); }
+  .sum-table th:not(:first-child) { text-align:right; }
+  .sum-table td { padding:9px 8px; border-bottom:1px solid var(--border); font-size:13px; }
+  .sum-table td:not(:first-child) { text-align:right; }
+  .sum-table tr:last-child td { border-bottom:none; }
+  .sum-table .sep td { background:#f8f9fa; padding:4px 8px; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--border); }
+  .sum-table .musT-row td { color:var(--orange); font-weight:500; }
+  .sum-table tfoot td { padding:12px 8px; border-top:2px solid var(--text); font-weight:700; font-size:14px; }
+  .sum-table tfoot td:not(:first-child) { text-align:right; color:var(--green); }
 
-  /* total kwh card */
-  .total-kwh-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+  .btn-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
+  .btn {
+    padding:11px 18px; border-radius:8px; border:none; cursor:pointer;
+    font-family:'Inter',sans-serif; font-size:13px; font-weight:500;
+    display:flex; align-items:center; gap:6px; transition:all .15s;
   }
+  .btn-primary { background:var(--accent); color:#fff; }
+  .btn-primary:hover { background:#1d4ed8; }
+  .btn-save { background:#16a34a; color:#fff; }
+  .btn-save:hover { background:#15803d; }
+  .btn-wa { background:#25d366; color:#fff; }
+  .btn-wa:hover { background:#22c55e; }
+  .btn-ghost { background:#f1f5f9; color:var(--text); border:1px solid var(--border); }
+  .btn-ghost:hover { background:#e2e8f0; }
+  .btn:disabled { opacity:.4; pointer-events:none; }
 
-  #computed-price {
-    font-size: 12px;
-    color: var(--accent2);
-    margin-top: 2px;
-    min-height: 18px;
-  }
+  .toast { position:fixed; bottom:20px; right:20px; background:#1a1d23; color:#fff; border-radius:8px; padding:12px 18px; font-size:13px; z-index:999; opacity:0; transition:opacity .3s; pointer-events:none; }
+  .toast.show { opacity:1; }
 
-  /* ── PARTIES GRID ── */
-  #parties-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 10px;
-  }
+  #warn { font-size:13px; color:var(--red); margin-top:8px; min-height:16px; }
 
-  .party-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    transition: border-color .2s;
-  }
-  .party-card:hover { border-color: var(--muted); }
-  .party-card .party-name input[type=text] {
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid var(--border);
-    border-radius: 0;
-    font-size: 13px;
-    padding: 2px 4px;
-    flex: 1;
-    color: var(--text);
-    font-family: var(--mono);
-    outline: none;
-    width: 100%;
-  }
-  .party-card .party-name input[type=text]:focus { border-bottom-color: var(--accent); }
-  .party-card .kwh-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .party-card .kwh-row input[type=number] {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 14px;
-    padding: 7px 10px;
-    width: 100%;
-    outline: none;
-    transition: border-color .2s;
-  }
-  .party-card .kwh-row input[type=number]:focus { border-color: var(--accent); }
-  .party-card .kwh-label {
-    font-size: 11px;
-    color: var(--muted);
-    white-space: nowrap;
-  }
-  .party-card .result-line {
-    font-size: 12px;
-    color: var(--success);
-    min-height: 16px;
-    text-align: right;
-  }
-  .party-card .remove-btn {
-    align-self: flex-end;
-    background: none;
-    border: none;
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 16px;
-    line-height: 1;
-    padding: 0;
-    transition: color .2s;
-  }
-  .party-card .remove-btn:hover { color: var(--danger); }
-
-  .controls-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-top: 14px;
-  }
-  button.add-btn {
-    background: transparent;
-    border: 1px dashed var(--border);
-    border-radius: 6px;
-    color: var(--muted);
-    cursor: pointer;
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: 1px;
-    padding: 9px 18px;
-    transition: all .2s;
-  }
-  button.add-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-  /* ── SUMMARY ── */
-  #summary {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    margin-top: 16px;
-    overflow: hidden;
-  }
-  #summary table { width: 100%; border-collapse: collapse; }
-  #summary thead th {
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--muted);
-    padding: 12px 16px;
-    text-align: left;
-    border-bottom: 1px solid var(--border);
-  }
-  #summary tbody tr {
-    border-bottom: 1px solid var(--border);
-    transition: background .15s;
-  }
-  #summary tbody tr:last-child { border-bottom: none; }
-  #summary tbody tr:hover { background: rgba(255,255,255,.03); }
-  #summary td { padding: 11px 16px; font-size: 13px; }
-  #summary td.amount { text-align: right; color: var(--success); font-size: 14px; }
-  #summary td.pct { color: var(--muted); font-size: 12px; }
-  #summary tfoot td {
-    padding: 13px 16px;
-    font-size: 13px;
-    border-top: 1px solid var(--accent);
-    color: var(--accent);
-  }
-  #summary tfoot td.total-amount { text-align: right; font-size: 16px; }
-
-  #warn {
-    font-size: 12px;
-    color: var(--danger);
-    margin-top: 10px;
-    min-height: 18px;
-  }
-
-  .reset-btn {
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--muted);
-    cursor: pointer;
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 1px;
-    padding: 9px 16px;
-    transition: all .2s;
-    margin-top: 20px;
-  }
-  .reset-btn:hover { color: var(--danger); border-color: var(--danger); }
-
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .hist-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .hist-row:last-child { border-bottom:none; }
+  .hist-month { font-weight:600; }
+  .hist-detail { color:var(--muted); font-size:12px; }
+  .hist-total { font-weight:700; color:var(--green); }
+  .no-hist { color:var(--muted); font-size:13px; text-align:center; padding:16px; }
 </style>
 </head>
 <body>
 
-<header>
-  <h1>Elektrik Hesaplayıcı</h1>
-  <span>Bina Paylaşımı</span>
-</header>
+<div class="top-bar">
+  <h1>⚡ Elektrik Hesaplayıcı</h1>
+  <div class="conn">Supabase <span class="dot" id="conn-dot"></span></div>
+</div>
 
-<div class="container">
+<div class="page">
 
-  <!-- INSTRUCTIONS -->
-  <p class="section-label">Nasıl kullanılır</p>
-  <div class="instruction-box">
-    <strong>Sadece bir yol seçin</strong> — iki seçenek var, ikisini birden doldurmayın:
-    <div class="step">
-      <div class="step-num">A</div>
-      <div><strong>Fatura tutarını biliyorsanız:</strong> Sol taraftaki "Toplam Fatura Tutarı" alanını + aşağıdaki "Bina Toplam Tüketimi" alanını doldurun. Birim fiyat otomatik hesaplanır.</div>
+  <!-- STEP 1 -->
+  <div class="card">
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <div>
+        <div class="step-title">Dönem Seç</div>
+        <div class="step-sub">Hangi ay için hesap yapıyorsunuz?</div>
+      </div>
     </div>
-    <div class="step">
-      <div class="step-num">B</div>
-      <div><strong>kWh birim fiyatını biliyorsanız:</strong> Sadece sağ taraftaki "kWh Birim Fiyatı" alanını doldurun. Yeterli.</div>
-    </div>
-    <div style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(232,200,74,0.15); font-size:11px; color:var(--muted)">
-      Ardından her daire için sayaç tüketimini (kWh) girin. Her dairenin ödeyeceği tutar anında hesaplanır.
+    <div class="date-row">
+      <select id="bill-month">
+        <option value="1">Ocak</option><option value="2">Şubat</option>
+        <option value="3">Mart</option><option value="4">Nisan</option>
+        <option value="5">Mayıs</option><option value="6">Haziran</option>
+        <option value="7">Temmuz</option><option value="8">Ağustos</option>
+        <option value="9">Eylül</option><option value="10">Ekim</option>
+        <option value="11">Kasım</option><option value="12">Aralık</option>
+      </select>
+      <input type="number" id="bill-year" min="2020" max="2099" style="width:90px">
     </div>
   </div>
 
-  <!-- PRICE PATHS -->
-  <p class="section-label">Fiyat Bilgisi</p>
-  <div class="paths-wrapper">
-
-    <!-- PATH A -->
-    <div class="path-card" id="card-a">
-      <div class="path-title">
-        <div class="step-num" style="background:var(--accent2);color:#0f1117;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">A</div>
-        <span style="color:var(--accent2)">Fatura tutarından</span>
-        <span class="badge badge-a">Önerilen</span>
-      </div>
-      <div class="path-desc">Fatura elinizde varsa: toplam tutarı girin. Birim fiyat otomatik çıkar.</div>
-      <div class="field">
-        <label>Toplam Fatura Tutarı (₺)</label>
-        <input type="number" id="total-bill" placeholder="örn. 4800" min="0" step="0.01">
-        <span class="hint">Faturadaki toplam tutar</span>
+  <!-- STEP 2 -->
+  <div class="card">
+    <div class="step-header">
+      <div class="step-num">2</div>
+      <div>
+        <div class="step-title">Fiyat Bilgisi</div>
+        <div class="step-sub">Aşağıdaki iki yöntemden birini seçin</div>
       </div>
     </div>
 
-    <div class="path-divider"><span>veya</span></div>
-
-    <!-- PATH B -->
-    <div class="path-card" id="card-b">
-      <div class="path-title">
-        <div class="step-num" style="background:var(--accent);color:#0f1117;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">B</div>
-        <span style="color:var(--accent)">Birim fiyattan</span>
-        <span class="badge badge-b">TEDAŞ tarifi</span>
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.7;color:#1e40af">
+      <strong style="display:block;margin-bottom:6px">Sadece bir yol seçin — ikisini birden doldurmayın:</strong>
+      <div style="display:flex;gap:8px;margin-bottom:4px">
+        <span style="background:#2563eb;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">A</span>
+        <span><strong>Fatura tutarını biliyorsanız:</strong> "Toplam Fatura Tutarı" + "Bina Toplam Tüketimi" alanlarını doldurun. Birim fiyat otomatik hesaplanır.</span>
       </div>
-      <div class="path-desc">kWh fiyatını zaten biliyorsanız direkt buraya girin. Fatura tutarına gerek yok.</div>
-      <div class="field">
-        <label>kWh Birim Fiyatı (₺)</label>
-        <input type="number" id="kwh-price" placeholder="örn. 3.85" min="0" step="0.0001">
-        <span class="hint">TEDAŞ güncel tarifi</span>
+      <div style="display:flex;gap:8px">
+        <span style="background:#ea580c;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">B</span>
+        <span><strong>kWh birim fiyatını biliyorsanız:</strong> Sadece "kWh Birim Fiyatı" alanını doldurun.</span>
       </div>
     </div>
-  </div>
 
-  <!-- TOTAL KWH (shared) -->
-  <div class="total-kwh-card">
-    <div class="field">
-      <label>Bina Toplam Tüketimi (kWh) <span style="color:var(--muted);font-size:10px;letter-spacing:1px">— A seçeneğinde gerekli</span></label>
-      <input type="number" id="total-kwh" placeholder="örn. 1245" min="0" step="0.01">
-      <span class="hint">Ana sayaçtaki toplam kWh — sadece A seçeneğinde doldurun</span>
+    <!-- METHOD A -->
+    <div id="method-a" style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;transition:border-color .2s,background .2s">
+      <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#2563eb;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+        <span style="background:#2563eb;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">A</span>
+        Fatura tutarından
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:140px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Toplam Fatura Tutarı (₺)</div>
+          <input type="number" id="total-bill" placeholder="örn. 4800" min="0" step="any" oninput="recalc()" style="width:100%">
+        </div>
+        <div style="flex:1;min-width:140px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Bina Toplam Tüketimi (kWh)</div>
+          <input type="number" id="total-kwh" placeholder="örn. 1245" min="0" step="any" oninput="recalc()" style="width:100%">
+        </div>
+      </div>
     </div>
+
+    <div style="text-align:center;font-size:11px;color:var(--muted);letter-spacing:2px;margin:4px 0">— VEYA —</div>
+
+    <!-- METHOD B -->
+    <div id="method-b" style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-top:10px;transition:border-color .2s,background .2s">
+      <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#ea580c;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+        <span style="background:#ea580c;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">B</span>
+        Birim fiyattan (TEDAŞ tarifi)
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">kWh Birim Fiyatı (₺)</div>
+      <input type="number" id="kwh-price" placeholder="örn. 3.85" min="0" step="any" oninput="recalc()" style="width:100%">
+    </div>
+
+    <!-- COMPUTED PRICE DISPLAY -->
     <div id="computed-price"></div>
+
+    <!-- DEBUG BOX -->
+    <div id="debug-box" style="display:none;margin-top:10px;background:#f8f9fa;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;font-family:monospace;color:#374151;line-height:1.8"></div>
   </div>
 
-  <!-- PARTIES -->
-  <p class="section-label">Daireler</p>
-  <div id="parties-grid"></div>
-  <div class="controls-row">
-    <button class="add-btn" onclick="addParty()">＋ Daire ekle</button>
+  <!-- STEP 3 -->
+  <div class="card">
+    <div class="step-header">
+      <div class="step-num">3</div>
+      <div>
+        <div class="step-title">Sayaç Değerleri</div>
+        <div class="step-sub">Bu ayki sayaç okumalarını girin</div>
+      </div>
+    </div>
+    <!-- ANLEITUNG -->
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.85;color:#166534">
+      <strong style="display:block;margin-bottom:6px">📖 Nasıl çalışır?</strong>
+      <div style="display:grid;grid-template-columns:22px 1fr;gap:6px 8px;align-items:start">
+        <span style="background:#16a34a;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">1</span>
+        <span><b>"↓ Geçen ayın değerlerini yükle"</b> butonuna basın — en son kaydedilen sayaç değerleri otomatik yüklenir.</span>
+        <span style="background:#16a34a;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">2</span>
+        <span>Her daire için <b>bugünkü sayaç değerini</b> girin (sayaçtaki toplam birikimli rakam).</span>
+        <span style="background:#16a34a;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">3</span>
+        <span>Sistem otomatik hesaplar: <b>Bu ay tüketim = Bugünkü − Geçen ay</b><br><span style="color:#15803d;font-size:11px">Örnek: 13.680 − 12.450 = 1.230 kWh</span></span>
+        <span style="background:#16a34a;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">4</span>
+        <span>Hesap bittikten sonra <b>💾 Kaydet</b>'e basın — bu değerler gelecek ay referans olarak kullanılır.</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="loadPrev()" id="load-btn">↓ Geçen ayın değerlerini yükle</button>
+    </div>
+    <div id="load-status" style="font-size:12px;color:var(--muted);margin-bottom:8px;min-height:16px"></div>
+
+    <div class="block-label">Blok A</div>
+    <div class="units-grid" id="block-a"></div>
+    <div class="block-label">Blok B</div>
+    <div class="units-grid" id="block-b"></div>
+
+    <div id="warn"></div>
+
+    <div class="musT-box" id="musT-box" style="display:none">
+      <div class="musT-left">
+        <strong id="musT-kwh">— kWh</strong>
+        Müşterek Elektrik (ortak alan)
+      </div>
+      <div class="musT-right">
+        <div class="per">÷ 14 daire</div>
+        <div class="val" id="musT-per">— ₺</div>
+        <div class="per">daire başına aidat payı</div>
+      </div>
+    </div>
   </div>
 
-  <div id="warn"></div>
-
-  <!-- SUMMARY -->
-  <p class="section-label">Hesap Özeti</p>
-  <div id="summary">
-    <table>
-      <thead>
-        <tr>
-          <th>Daire</th>
-          <th>kWh</th>
-          <th class="pct" style="text-align:right">Pay</th>
-          <th style="text-align:right">Tutar (₺)</th>
-        </tr>
-      </thead>
-      <tbody id="summary-body"></tbody>
-      <tfoot>
-        <tr>
-          <td colspan="2" style="color:var(--muted);font-size:12px;">TOPLAM</td>
-          <td class="pct" style="text-align:right" id="sum-pct"></td>
-          <td class="total-amount" id="sum-total">—</td>
-        </tr>
-      </tfoot>
+  <!-- STEP 4 -->
+  <div class="card" id="ozet-card" style="display:none">
+    <div class="step-header">
+      <div class="step-num">4</div>
+      <div>
+        <div class="step-title">Hesap Özeti</div>
+        <div class="step-sub" id="ozet-sub"></div>
+      </div>
+    </div>
+    <table class="sum-table">
+      <thead><tr><th>Daire</th><th>kWh</th><th>Pay</th><th>Tutar</th></tr></thead>
+      <tbody id="sum-body"></tbody>
+      <tfoot><tr><td colspan="3">Toplam</td><td id="sum-total">—</td></tr></tfoot>
     </table>
+
+    <div class="btn-row">
+      <button class="btn btn-save" onclick="saveAll()">💾 Kaydet</button>
+      <button class="btn btn-wa" onclick="sendWA()">💬 WhatsApp</button>
+      <button class="btn btn-ghost" onclick="dlPDF()">🖨 PDF</button>
+      <button class="btn btn-ghost" onclick="dlCSV()">⬇ CSV</button>
+    </div>
   </div>
 
-  <button class="reset-btn" onclick="resetAll()">↺ Sıfırla</button>
+  <!-- GEÇMİŞ -->
+  <div class="card">
+    <div class="card-title">📋 Geçmiş Kayıtlar</div>
+    <div id="gecmis-list"><div class="no-hist">Yükleniyor...</div></div>
+  </div>
 
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-let parties = [];
-let idCounter = 0;
+const SB  = 'https://ivklfobzoxsapgsreqkf.supabase.co';
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2a2xmb2J6b3hzYXBnc3JlcWtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5OTYyMjYsImV4cCI6MjA5MzU3MjIyNn0.Ilxe06TiA9r25nIkseMZjbDcZI0TAP2TvarqfSF2MfE';
+const MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const PARTIES = 14;
 
-function addParty(name='', kwh='') {
-  const id = ++idCounter;
-  parties.push({ id, name, kwh });
-  renderParties();
-  recalc();
+const units = [
+  ...['A1','A2','A3','A4','A5','A6'].map((n,i)=>({id:n,block:'A',did:i+1})),
+  ...['B1','B2','B3','B4','B5','B6','B7','B8'].map((n,i)=>({id:n,block:'B',did:i+7}))
+];
+
+let prevVals = {};
+
+// ── SAFE NUMBER PARSER ──
+// Handles both "48000" and "48.000" (Turkish thousand-sep) and "48,5" (Turkish decimal)
+function parseNum(val) {
+  if (val === null || val === undefined || val === '') return 0;
+  let s = String(val).trim();
+  // If input type=number, the browser always gives us the raw numeric string
+  // But in case someone pastes "1.234,56" format:
+  // Count dots and commas
+  const dots = (s.match(/\./g) || []).length;
+  const commas = (s.match(/,/g) || []).length;
+
+  if (dots > 1) {
+    // "1.234.567" → thousand separators, remove them
+    s = s.replace(/\./g, '');
+  } else if (commas > 1) {
+    // "1,234,567" → thousand separators, remove them
+    s = s.replace(/,/g, '');
+  } else if (dots === 1 && commas === 1) {
+    // "1.234,56" → TR format: remove dot, replace comma with dot
+    if (s.indexOf('.') < s.indexOf(',')) {
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else {
+      // "1,234.56" → EN format: remove comma
+      s = s.replace(/,/g, '');
+    }
+  } else if (commas === 1 && dots === 0) {
+    // "48,5" → TR decimal → replace with dot
+    s = s.replace(',', '.');
+  }
+  // Now s should be a clean numeric string
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
 }
 
-function removeParty(id) {
-  parties = parties.filter(p => p.id !== id);
-  renderParties();
-  recalc();
+// Reads an input field safely
+function getVal(id) {
+  const el = document.getElementById(id);
+  if (!el) return 0;
+  // For type=number, .value is always en-US format (dot as decimal)
+  return parseNum(el.value);
 }
 
-function renderParties() {
-  const grid = document.getElementById('parties-grid');
-  grid.innerHTML = '';
-  parties.forEach((p, i) => {
-    const card = document.createElement('div');
-    card.className = 'party-card';
-    card.id = 'card-' + p.id;
-    card.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
-        <input type="text" placeholder="Daire ${i+1}" value="${p.name}"
-          class="party-name" oninput="updateName(${p.id}, this.value)"
-          style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:13px;padding:2px 4px;flex:1;outline:none;">
-        <button class="remove-btn" onclick="removeParty(${p.id})" title="Sil">×</button>
-      </div>
-      <div class="kwh-row">
-        <input type="number" placeholder="0" min="0" step="0.01"
-          value="${p.kwh}" oninput="updateKwh(${p.id}, this.value)">
-        <span class="kwh-label">kWh</span>
-      </div>
-      <div class="result-line" id="result-${p.id}"></div>
-    `;
-    grid.appendChild(card);
+const now = new Date();
+document.getElementById('bill-month').value = now.getMonth()+1;
+document.getElementById('bill-year').value  = now.getFullYear();
+
+
+(async()=>{
+  const dot = document.getElementById('conn-dot');
+  try{
+    await api('sayac_okumalari?limit=1');
+    dot.classList.add('ok');
+    loadGecmis();
+  }catch{ dot.classList.add('err'); }
+})();
+
+async function api(path, opts={}){
+  const r = await fetch(SB+'/rest/v1/'+path,{
+    headers:{ apikey:KEY, Authorization:'Bearer '+KEY, 'Content-Type':'application/json', ...opts.headers },
+    ...opts
+  });
+  if(!r.ok) throw new Error(await r.text());
+  return r.status===204?null:r.json();
+}
+
+function renderUnits(){
+  ['A','B'].forEach(bl=>{
+    const grid = document.getElementById('block-'+bl.toLowerCase());
+    grid.innerHTML='';
+    units.filter(u=>u.block===bl).forEach(u=>{
+      const d=document.createElement('div');
+      d.className='unit-card'; d.id='uc-'+u.id;
+      d.innerHTML=`
+        <div class="unit-name">${u.id}</div>
+        <div class="unit-right">
+          <input type="number" id="u-${u.id}" placeholder="Sayaç" min="0" step="any" oninput="recalc()">
+          <div class="unit-prev" id="up-${u.id}"></div>
+          <div class="unit-diff" id="ud-${u.id}"></div>
+        </div>`;
+      grid.appendChild(d);
+    });
   });
 }
 
-function updateName(id, val) {
-  const p = parties.find(x => x.id === id);
-  if (p) p.name = val;
-  recalc();
-}
-
-function updateKwh(id, val) {
-  const p = parties.find(x => x.id === id);
-  if (p) p.kwh = val;
-  recalc();
-}
-
-function getPrice() {
-  const bill   = parseFloat(document.getElementById('total-bill').value) || 0;
-  const total  = parseFloat(document.getElementById('total-kwh').value) || 0;
-  const direct = parseFloat(document.getElementById('kwh-price').value) || 0;
-  if (direct > 0) return direct;
-  if (bill > 0 && total > 0) return bill / total;
-  return 0;
-}
-
-function updatePathHighlight() {
-  const bill   = parseFloat(document.getElementById('total-bill').value) || 0;
-  const direct = parseFloat(document.getElementById('kwh-price').value) || 0;
-  const cardA  = document.getElementById('card-a');
-  const cardB  = document.getElementById('card-b');
-
-  cardA.classList.remove('active-a', 'dimmed');
-  cardB.classList.remove('active-b', 'dimmed');
-
-  if (bill > 0 && direct === 0) {
-    cardA.classList.add('active-a');
-    cardB.classList.add('dimmed');
-  } else if (direct > 0 && bill === 0) {
-    cardB.classList.add('active-b');
-    cardA.classList.add('dimmed');
-  } else if (bill > 0 && direct > 0) {
-    // both filled — B wins, warn visually
-    cardB.classList.add('active-b');
+async function loadPrev(){
+  const btn=document.getElementById('load-btn');
+  const st=document.getElementById('load-status');
+  btn.disabled=true; st.textContent='Yükleniyor...';
+  try{
+    const data = await api('sayac_okumalari?select=daire_id,sayac_degeri,tarih&order=tarih.desc&limit=300');
+    prevVals={};
+    data.forEach(r=>{
+      if(!prevVals[r.daire_id]) prevVals[r.daire_id]={val:parseFloat(r.sayac_degeri),tarih:r.tarih};
+    });
+    let count=0;
+    units.forEach(u=>{
+      const prev=prevVals[u.did];
+      const el=document.getElementById('up-'+u.id);
+      if(prev&&el){
+        el.innerHTML=`Önceki: <span>${prev.val.toFixed(0)}</span> <span style="color:var(--muted)">(${prev.tarih})</span>`;
+        count++;
+      }
+    });
+    st.textContent=`✓ ${count} daire için önceki değer yüklendi`;
+    toast('Önceki değerler yüklendi','ok');
+    recalc();
+  }catch(e){
+    st.textContent='Hata: '+e.message;
+    toast('Yüklenemedi','err');
   }
+  btn.disabled=false;
 }
 
-function recalc() {
-  updatePathHighlight();
+function recalc(){
+  // ── READ VALUES using safe parser ──
+  const bill     = getVal('total-bill');
+  const totalKwh = getVal('total-kwh');
+  const dir      = getVal('kwh-price');
 
-  const price    = getPrice();
-  const bill     = parseFloat(document.getElementById('total-bill').value) || 0;
-  const totalKwh = parseFloat(document.getElementById('total-kwh').value) || 0;
-  const directPx = parseFloat(document.getElementById('kwh-price').value) || 0;
+  // ── DETERMINE PRICE ──
+  let price = 0;
+  if (dir > 0) {
+    price = dir;
+  } else if (bill > 0 && totalKwh > 0) {
+    price = bill / totalKwh;
+  }
 
+  // ── METHOD LOCK + HIGHLIGHT ──
+  const mA = document.getElementById('method-a');
+  const mB = document.getElementById('method-b');
+  const inBill = document.getElementById('total-bill');
+  const inKwh  = document.getElementById('total-kwh');
+  const inDir  = document.getElementById('kwh-price');
+
+  if (dir > 0) {
+    mA.style.opacity='0.4'; mA.style.pointerEvents='none';
+    mB.style.borderColor='#ea580c'; mB.style.background='#fff7ed';
+    inBill.value=''; inKwh.value='';
+  } else if (bill > 0 || totalKwh > 0) {
+    mB.style.opacity='0.4'; mB.style.pointerEvents='none';
+    mA.style.borderColor='#2563eb'; mA.style.background='#eff6ff';
+    inDir.value='';
+  } else {
+    mA.style.opacity='1'; mA.style.pointerEvents='';
+    mB.style.opacity='1'; mB.style.pointerEvents='';
+    mA.style.borderColor=''; mA.style.background='';
+    mB.style.borderColor=''; mB.style.background='';
+  }
+
+  // ── COMPUTED PRICE HINT ──
   const cpEl = document.getElementById('computed-price');
-  if (bill > 0 && totalKwh > 0 && directPx === 0) {
-    cpEl.textContent = `→ Hesaplanan birim fiyat: ${(bill/totalKwh).toFixed(4)} ₺/kWh`;
-  } else if (bill > 0 && directPx > 0) {
-    cpEl.textContent = `⚠ İki alan da dolu — birim fiyat (${directPx} ₺) kullanılıyor. Fatura tutarını temizleyin.`;
-    cpEl.style.color = 'var(--danger)';
+  // No trailing zeros: 1.0000 → "1", 3.85 → "3,85", 3.8512 → "3,8512"
+  const fmtPrice = (n) => n.toLocaleString('tr-TR', {minimumFractionDigits:0, maximumFractionDigits:4});
+  if (bill > 0 && totalKwh > 0 && dir === 0) {
+    cpEl.textContent = `→ Hesaplanan birim fiyat: ${fmtPrice(price)} ₺/kWh`;
+    cpEl.style.color = '#2563eb';
+  } else if (dir > 0) {
+    cpEl.textContent = `→ Birim fiyat: ${fmtPrice(dir)} ₺/kWh`;
+    cpEl.style.color = '#ea580c';
   } else {
     cpEl.textContent = '';
-    cpEl.style.color = 'var(--accent2)';
   }
 
-  const partySum = parties.reduce((s, p) => s + (parseFloat(p.kwh) || 0), 0);
-  const warn = document.getElementById('warn');
-
-  if (totalKwh > 0 && partySum > totalKwh + 0.01) {
-    warn.textContent = `⚠ Daire toplamı (${fmt(partySum)} kWh), bina toplam tüketimini (${fmt(totalKwh)} kWh) aşıyor`;
+  // ── DEBUG BOX ──
+  const dbg = document.getElementById('debug-box');
+  if (bill > 0 || totalKwh > 0 || dir > 0) {
+    dbg.style.display = 'block';
+    const fmtDbg = (n, dec=2) => n.toLocaleString('tr-TR', {minimumFractionDigits:0, maximumFractionDigits:dec});
+    dbg.innerHTML = [
+      `Fatura: <b>${fmtDbg(bill,2)} ₺</b>`,
+      `Toplam kWh: <b>${fmtDbg(totalKwh,2)} kWh</b>`,
+      `Birim fiyat girilen: <b>${fmtDbg(dir,4)} ₺/kWh</b>`,
+      `→ Kullanılan birim fiyat: <b style="color:var(--accent)">${fmtDbg(price,4)} ₺/kWh</b>`,
+      price > 0 && totalKwh > 0 && dir === 0
+        ? `→ Kontrol: ${fmtDbg(bill,2)} ₺ ÷ ${fmtDbg(totalKwh,2)} kWh = <b>${fmtDbg(price,4)} ₺/kWh</b>`
+        : ''
+    ].filter(Boolean).join('<br>');
   } else {
-    warn.textContent = '';
+    dbg.style.display = 'none';
   }
 
-  parties.forEach(p => {
-    const kwh = parseFloat(p.kwh) || 0;
-    const el = document.getElementById('result-' + p.id);
-    if (!el) return;
-    el.textContent = (price > 0 && kwh > 0) ? `→ ${fmtTL(kwh * price)}` : '';
+  // ── PER-UNIT DIFFS ──
+  const unitKwhs = [];
+  units.forEach(u=>{
+    const cur  = getVal('u-'+u.id);
+    const prev = prevVals[u.did]?.val || 0;
+    let diff = 0;
+    if (cur > 0 && prev > 0 && cur >= prev) diff = cur - prev;
+    else if (cur > 0 && !prev) diff = cur;
+    unitKwhs.push(diff);
+    const diffEl = document.getElementById('ud-'+u.id);
+    const card   = document.getElementById('uc-'+u.id);
+    if (diffEl) diffEl.textContent = diff > 0 ? `Fark: ${diff.toFixed(2)} kWh` : '';
+    if (card)   card.classList.toggle('has-result', diff > 0 && price > 0);
   });
 
-  const tbody = document.getElementById('summary-body');
+  const unitSum  = unitKwhs.reduce((a,b)=>a+b, 0);
+  const sharedKwh = (totalKwh > 0 && unitSum <= totalKwh) ? totalKwh - unitSum : 0;
+
+  // ── WARN ──
+  document.getElementById('warn').textContent =
+    (totalKwh > 0 && unitSum > totalKwh + 0.01)
+      ? `⚠ Daire toplamı (${fmt(unitSum)} kWh) bina toplamını aşıyor` : '';
+
+  // ── MÜŞTEREK BOX ──
+  const mBox = document.getElementById('musT-box');
+  if (totalKwh > 0) {
+    mBox.style.display = 'flex';
+    document.getElementById('musT-kwh').textContent = fmt(sharedKwh) + ' kWh';
+    document.getElementById('musT-per').textContent =
+      (price > 0 && sharedKwh > 0) ? fmtTL(sharedKwh * price / PARTIES) : '— ₺';
+  } else {
+    mBox.style.display = 'none';
+  }
+
+  // ── SUMMARY ──
+  const hasData = price > 0 && unitSum > 0;
+  document.getElementById('ozet-card').style.display = hasData ? 'block' : 'none';
+  if (!hasData) return;
+
+  document.getElementById('ozet-sub').textContent = getMonthStr() + ' — ' + fmtTL(price) + '/kWh';
+
+  const tbody = document.getElementById('sum-body');
   tbody.innerHTML = '';
-  let totalAmount = 0;
-  parties.forEach((p, i) => {
-    const kwh = parseFloat(p.kwh) || 0;
-    const amount = price > 0 ? kwh * price : 0;
-    totalAmount += amount;
-    const pct = partySum > 0 ? (kwh / partySum * 100).toFixed(1) : '—';
-    const label = p.name || `Daire ${i+1}`;
+  let grand = 0, lastBlock = '';
+
+  units.forEach((u,i)=>{
+    if (u.block !== lastBlock) {
+      const s = document.createElement('tr'); s.className = 'sep';
+      s.innerHTML = `<td colspan="4">Blok ${u.block}</td>`; tbody.appendChild(s);
+      lastBlock = u.block;
+    }
+    const kwh = unitKwhs[i];
+    const amt  = price * kwh;
+    grand += amt;
+    const pct = unitSum > 0 ? ((kwh / unitSum) * 100).toFixed(1) + '%' : '—';
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${label}</td>
-      <td>${fmt(kwh)}</td>
-      <td class="pct" style="text-align:right">${pct}%</td>
-      <td class="amount">${price > 0 ? fmtTL(amount) : '—'}</td>
-    `;
+    tr.innerHTML = `<td><b>${u.id}</b></td>
+      <td>${kwh > 0 ? fmt(kwh) : '—'}</td>
+      <td style="color:var(--muted)">${kwh > 0 ? pct : '—'}</td>
+      <td style="color:var(--green);font-weight:600">${kwh > 0 ? fmtTL(amt) : '—'}</td>`;
     tbody.appendChild(tr);
   });
 
-  document.getElementById('sum-pct').textContent = partySum > 0 ? '100%' : '';
-  document.getElementById('sum-total').textContent =
-    price > 0 && parties.length > 0 ? fmtTL(totalAmount) : '—';
+  if (sharedKwh > 0) {
+    const sep = document.createElement('tr'); sep.className = 'sep';
+    sep.innerHTML = `<td colspan="4">Müşterek Elektrik</td>`; tbody.appendChild(sep);
+    const sAmt = sharedKwh * price; grand += sAmt;
+    const tr = document.createElement('tr'); tr.className = 'musT-row';
+    tr.innerHTML = `<td><b>Müşterek</b></td>
+      <td>${fmt(sharedKwh)}</td>
+      <td style="color:var(--muted)">÷${PARTIES} = ${fmtTL(sAmt/PARTIES)}</td>
+      <td style="font-weight:600">${fmtTL(sAmt)}</td>`;
+    tbody.appendChild(tr);
+  }
+
+  document.getElementById('sum-total').textContent = fmtTL(grand);
 }
 
-function fmt(n) {
-  return n % 1 === 0 ? n.toFixed(0) : n.toFixed(2);
-}
-function fmtTL(n) {
-  return n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺';
+async function saveAll(){
+  const tarih = new Date().toISOString().split('T')[0]; // today automatically
+  let saved = 0;
+  for (const u of units) {
+    const cur = getVal('u-'+u.id);
+    if (!cur) continue;
+    try {
+      await api('sayac_okumalari', {
+        method:'POST',
+        headers:{Prefer:'return=minimal'},
+        body: JSON.stringify({daire_id:u.did, sayac_degeri:cur, tarih})
+      });
+      saved++;
+    } catch(e) { console.error(u.id, e); }
+  }
+  toast(`${saved} sayaç kaydedildi ✓`, 'ok');
+  loadGecmis();
+  loadPrev();
 }
 
-function resetAll() {
-  if (!confirm('Tüm veriler silinsin mi?')) return;
-  parties = [];
-  idCounter = 0;
-  ['total-bill','total-kwh','kwh-price'].forEach(id => {
-    document.getElementById(id).value = '';
+async function loadGecmis(){
+  const el = document.getElementById('gecmis-list');
+  try {
+    const data = await api('sayac_okumalari?select=tarih&order=tarih.desc&limit=200');
+    const dates = [...new Set(data.map(r=>r.tarih))].slice(0,8);
+    if (!dates.length) { el.innerHTML='<div class="no-hist">Henüz kayıt yok</div>'; return; }
+    el.innerHTML = dates.map(d=>`
+      <div class="hist-row">
+        <div><div class="hist-month">${d}</div></div>
+      </div>`).join('');
+  } catch(e) { el.innerHTML='<div class="no-hist">Yüklenemedi</div>'; }
+}
+
+function buildText(){
+  const price     = getPrice();
+  const totalKwh  = getVal('total-kwh');
+  const unitKwhs  = units.map(u=>{
+    const c=getVal('u-'+u.id), p=prevVals[u.did]?.val||0;
+    return c>0&&p>0&&c>=p?c-p:(c>0&&!p?c:0);
   });
-  renderParties();
-  recalc();
+  const unitSum   = unitKwhs.reduce((a,b)=>a+b,0);
+  const sharedKwh = totalKwh>0&&unitSum<=totalKwh?totalKwh-unitSum:0;
+  const lines     = ['⚡ ELEKTRİK HESABI — '+getMonthStr(),'─'.repeat(36)];
+  if (price>0) lines.push(`Birim Fiyat: ${price.toFixed(4)} ₺/kWh\n`);
+  ['A','B'].forEach(bl=>{
+    lines.push(`[ BLOK ${bl} ]`);
+    units.filter(u=>u.block===bl).forEach(u=>{
+      const i=units.indexOf(u), kwh=unitKwhs[i];
+      lines.push(`  ${u.id}  ${kwh>0?fmt(kwh)+'kWh':'—'}  →  ${price>0&&kwh>0?fmtTL(kwh*price):'—'}`);
+    });
+    lines.push('');
+  });
+  if (sharedKwh>0&&price>0){
+    const sAmt=sharedKwh*price;
+    lines.push(`[ MÜŞTEREk ]`);
+    lines.push(`  ${fmt(sharedKwh)} kWh  →  ${fmtTL(sAmt)}`);
+    lines.push(`  Daire başına: ${fmtTL(sAmt/PARTIES)}\n`);
+  }
+  const grand = unitKwhs.reduce((s,k)=>s+price*k,0)+(sharedKwh*price);
+  lines.push('─'.repeat(36));
+  lines.push(`TOPLAM: ${fmtTL(grand)}`);
+  return lines.join('\n');
 }
 
-['total-bill','total-kwh','kwh-price'].forEach(id => {
-  document.getElementById(id).addEventListener('input', recalc);
+function sendWA(){ window.open('https://wa.me/?text='+encodeURIComponent(buildText()),'_blank'); }
+
+function dlCSV(){
+  const price     = getPrice();
+  const totalKwh  = getVal('total-kwh');
+  const unitKwhs  = units.map(u=>{const c=getVal('u-'+u.id),p=prevVals[u.did]?.val||0;return c>0&&p>0&&c>=p?c-p:(c>0&&!p?c:0);});
+  const unitSum   = unitKwhs.reduce((a,b)=>a+b,0);
+  const sharedKwh = totalKwh>0&&unitSum<=totalKwh?totalKwh-unitSum:0;
+  const rows      = [['Dönem','Daire','kWh','Tutar (₺)']];
+  units.forEach((u,i)=>rows.push([getMonthStr(),u.id,fmt(unitKwhs[i]),price>0?fmtN(unitKwhs[i]*price):'']));
+  if (sharedKwh>0) rows.push([getMonthStr(),'Müşterek',fmt(sharedKwh),price>0?fmtN(sharedKwh*price):'']);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff'+rows.map(r=>r.join(',')).join('\n')],{type:'text/csv;charset=utf-8'}));
+  a.download = `elektrik_${getMonthStr().replace(' ','_')}.csv`; a.click();
+}
+
+function dlPDF(){
+  const price     = getPrice();
+  const totalKwh  = getVal('total-kwh');
+  const unitKwhs  = units.map(u=>{const c=getVal('u-'+u.id),p=prevVals[u.did]?.val||0;return c>0&&p>0&&c>=p?c-p:(c>0&&!p?c:0);});
+  const unitSum   = unitKwhs.reduce((a,b)=>a+b,0);
+  const sharedKwh = totalKwh>0&&unitSum<=totalKwh?totalKwh-unitSum:0;
+  let rows='',lb='',grand=0;
+  units.forEach((u,i)=>{
+    if (u.block!==lb){rows+=`<tr style="background:#f0f4ff"><td colspan="3" style="padding:5px 10px;font-size:11px;color:#2563eb;letter-spacing:1px;text-transform:uppercase">BLOK ${u.block}</td></tr>`;lb=u.block;}
+    const amt=price*unitKwhs[i]; grand+=amt;
+    rows+=`<tr><td style="padding:7px 10px">${u.id}</td><td style="padding:7px 10px;text-align:right">${unitKwhs[i]>0?fmt(unitKwhs[i]):'—'}</td><td style="padding:7px 10px;text-align:right;color:#16a34a;font-weight:600">${price>0&&unitKwhs[i]>0?fmtTL(amt):'—'}</td></tr>`;
+  });
+  if (sharedKwh>0){const sA=sharedKwh*price;grand+=sA;rows+=`<tr style="background:#fff7ed"><td colspan="3" style="padding:5px 10px;font-size:11px;color:#ea580c;letter-spacing:1px;text-transform:uppercase">Müşterek Elektrik</td></tr><tr style="background:#fff7ed"><td style="padding:7px 10px;color:#ea580c">Müşterek</td><td style="padding:7px 10px;text-align:right;color:#ea580c">${fmt(sharedKwh)} kWh</td><td style="padding:7px 10px;text-align:right;color:#ea580c;font-weight:600">${fmtTL(sA)}</td></tr>`;}
+  const w=window.open('','_blank','width=700,height=600');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;padding:24px;font-size:13px;color:#1a1a1a}h2{margin-bottom:4px}p{color:#666;font-size:12px;margin-bottom:16px}table{width:100%;border-collapse:collapse}th{background:#1a1a1a;color:#fff;padding:8px 10px;text-align:left;font-size:11px;letter-spacing:1px}th:not(:first-child){text-align:right}tr{border-bottom:1px solid #eee}tfoot td{padding:10px;font-weight:700;font-size:14px;border-top:2px solid #1a1a1a}tfoot td:last-child{text-align:right;color:#16a34a}@media print{button{display:none}}</style></head><body><h2>Elektrik Hesabı</h2><p>${getMonthStr()} &nbsp;·&nbsp; ${price>0?price.toFixed(4)+' ₺/kWh':''} &nbsp;·&nbsp; ${new Date().toLocaleDateString('tr-TR')}</p><table><thead><tr><th>Daire</th><th>kWh</th><th>Tutar</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="2">TOPLAM</td><td>${fmtTL(grand)}</td></tr></tfoot></table></body></html>`);
+  w.document.close(); setTimeout(()=>w.print(),400);
+}
+
+function getPrice(){
+  const bill = getVal('total-bill');
+  const tot  = getVal('total-kwh');
+  const dir  = getVal('kwh-price');
+  return dir > 0 ? dir : (bill > 0 && tot > 0 ? bill / tot : 0);
+}
+function getMonthStr(){
+  const m = parseInt(document.getElementById('bill-month').value) || 1;
+  const y = document.getElementById('bill-year').value || now.getFullYear();
+  return MONTHS[m-1] + ' ' + y;
+}
+function fmt(n){ return n%1===0 ? n.toFixed(0) : n.toFixed(2); }
+function fmtN(n){ return n.toFixed(2); }
+function fmtTL(n){ return n.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ₺'; }
+function toast(msg,type){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className='toast show';
+  el.style.background=type==='err'?'#dc2626':'#16a34a';
+  setTimeout(()=>el.className='toast',2800);
+}
+
+['bill-month','bill-year','total-bill','total-kwh','kwh-price'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el){ el.addEventListener('input',recalc); el.addEventListener('change',recalc); }
 });
 
-// Init
-for (let i = 1; i <= 14; i++) addParty(`Daire ${i}`, '');
+renderUnits();
+recalc();
 </script>
 </body>
 </html>
