@@ -15,6 +15,67 @@
   * { box-sizing:border-box; margin:0; padding:0; }
   body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; font-size:14px; min-height:100vh; }
 
+  /* ── LOGIN SCREEN ── */
+  #login-screen {
+    display:flex; align-items:center; justify-content:center;
+    min-height:100vh; background:var(--bg);
+  }
+  .login-card {
+    background:#fff; border:1px solid var(--border); border-radius:16px;
+    padding:40px 36px; width:100%; max-width:380px;
+    box-shadow:0 4px 24px rgba(0,0,0,0.08);
+  }
+  .login-logo {
+    font-size:28px; text-align:center; margin-bottom:8px;
+  }
+  .login-title {
+    font-size:20px; font-weight:700; text-align:center; margin-bottom:4px;
+  }
+  .login-sub {
+    font-size:13px; color:var(--muted); text-align:center; margin-bottom:28px;
+  }
+  .login-field { margin-bottom:14px; }
+  .login-field label {
+    display:block; font-size:12px; font-weight:600;
+    color:var(--muted); margin-bottom:5px; letter-spacing:0.5px;
+  }
+  .login-field input {
+    width:100%; border:1px solid var(--border); border-radius:8px;
+    padding:11px 14px; font-family:'Inter',sans-serif; font-size:14px;
+    color:var(--text); outline:none; transition:border-color .2s;
+  }
+  .login-field input:focus { border-color:var(--accent); }
+  .login-btn {
+    width:100%; padding:12px; background:var(--accent); color:#fff;
+    border:none; border-radius:8px; font-family:'Inter',sans-serif;
+    font-size:14px; font-weight:600; cursor:pointer; margin-top:6px;
+    transition:background .15s;
+  }
+  .login-btn:hover { background:#1d4ed8; }
+  .login-btn:disabled { opacity:0.5; pointer-events:none; }
+  .login-err {
+    margin-top:12px; padding:10px 12px; background:#fef2f2;
+    border:1px solid #fca5a5; border-radius:8px;
+    font-size:13px; color:var(--red); text-align:center; display:none;
+  }
+
+  /* ── MAIN APP (hidden until logged in) ── */
+  #app { display:none; }
+
+  /* ── USER BAR (shown when logged in) ── */
+  .user-bar {
+    background:#1e293b; color:#94a3b8; font-size:12px;
+    padding:6px 20px; display:flex; align-items:center;
+    justify-content:flex-end; gap:12px;
+  }
+  .user-bar span { color:#e2e8f0; }
+  .logout-btn {
+    background:transparent; border:1px solid #475569; color:#94a3b8;
+    border-radius:5px; padding:3px 10px; font-size:11px; cursor:pointer;
+    font-family:'Inter',sans-serif; transition:all .15s;
+  }
+  .logout-btn:hover { background:#dc2626; border-color:#dc2626; color:#fff; }
+
   .top-bar {
     background:var(--accent); color:#fff; padding:16px 20px;
     display:flex; align-items:center; justify-content:space-between;
@@ -122,175 +183,202 @@
 </head>
 <body>
 
-<div class="top-bar">
-  <h1>⚡ Elektrik Hesaplayıcı</h1>
-  <div class="conn">Supabase <span class="dot" id="conn-dot"></span></div>
+<!-- ══════════════════════════════════════════
+     LOGIN SCREEN
+══════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">⚡</div>
+    <div class="login-title">Elektrik Hesaplayıcı</div>
+    <div class="login-sub">Lütfen giriş yapın</div>
+
+    <div class="login-field">
+      <label>E-POSTA</label>
+      <input type="email" id="login-email" placeholder="admin@example.com" autocomplete="email">
+    </div>
+    <div class="login-field">
+      <label>ŞİFRE</label>
+      <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Giriş Yap</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
 </div>
 
-<div class="page">
+<!-- ══════════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════════ -->
+<div id="app">
 
-  <!-- STEP 1 -->
-  <div class="card">
-    <div class="step-header">
-      <div class="step-num">1</div>
-      <div>
-        <div class="step-title">Dönem Seç</div>
-        <div class="step-sub">Hangi ay için hesap yapıyorsunuz?</div>
-      </div>
-    </div>
-    <div class="date-row">
-      <select id="bill-month">
-        <option value="1">Ocak</option><option value="2">Şubat</option>
-        <option value="3">Mart</option><option value="4">Nisan</option>
-        <option value="5">Mayıs</option><option value="6">Haziran</option>
-        <option value="7">Temmuz</option><option value="8">Ağustos</option>
-        <option value="9">Eylül</option><option value="10">Ekim</option>
-        <option value="11">Kasım</option><option value="12">Aralık</option>
-      </select>
-      <input type="number" id="bill-year" min="2020" max="2099" style="width:90px">
-    </div>
+  <div class="user-bar">
+    Giriş yapıldı: <span id="user-email-display">—</span>
+    <button class="logout-btn" onclick="doLogout()">Çıkış</button>
   </div>
 
-  <!-- STEP 2 -->
-  <div class="card">
-    <div class="step-header">
-      <div class="step-num">2</div>
-      <div>
-        <div class="step-title">Fiyat Bilgisi</div>
-        <div class="step-sub">Aşağıdaki iki yöntemden birini seçin</div>
-      </div>
-    </div>
+  <div class="top-bar">
+    <h1>⚡ Elektrik Hesaplayıcı</h1>
+    <div class="conn">Supabase <span class="dot" id="conn-dot"></span></div>
+  </div>
 
-    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.7;color:#1e40af">
-      <strong style="display:block;margin-bottom:6px">Sadece bir yol seçin — ikisini birden doldurmayın:</strong>
-      <div style="display:flex;gap:8px;margin-bottom:4px">
-        <span style="background:#2563eb;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">A</span>
-        <span><strong>Fatura tutarını biliyorsanız:</strong> "Toplam Fatura Tutarı" + "Bina Toplam Tüketimi" alanlarını doldurun. Birim fiyat otomatik hesaplanır.</span>
-      </div>
-      <div style="display:flex;gap:8px">
-        <span style="background:#ea580c;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">B</span>
-        <span><strong>kWh birim fiyatını biliyorsanız:</strong> Sadece "kWh Birim Fiyatı" alanını doldurun.</span>
-      </div>
-    </div>
+  <div class="page">
 
-    <!-- METHOD A -->
-    <div id="method-a" style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;transition:border-color .2s,background .2s">
-      <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#2563eb;margin-bottom:10px;display:flex;align-items:center;gap:6px">
-        <span style="background:#2563eb;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">A</span>
-        Fatura tutarından
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <div style="flex:1;min-width:140px">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Toplam Fatura Tutarı (₺)</div>
-          <input type="number" id="total-bill" placeholder="örn. 4800" min="0" step="any" oninput="recalc()" style="width:100%">
-        </div>
-        <div style="flex:1;min-width:140px">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Bina Toplam Tüketimi (kWh)</div>
-          <input type="number" id="total-kwh" placeholder="örn. 1245" min="0" step="any" oninput="recalc()" style="width:100%">
+    <!-- STEP 1 -->
+    <div class="card">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">Dönem Seç</div>
+          <div class="step-sub">Hangi ay için hesap yapıyorsunuz?</div>
         </div>
       </div>
-    </div>
-
-    <div style="text-align:center;font-size:11px;color:var(--muted);letter-spacing:2px;margin:4px 0">— VEYA —</div>
-
-    <!-- METHOD B -->
-    <div id="method-b" style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-top:10px;transition:border-color .2s,background .2s">
-      <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#ea580c;margin-bottom:10px;display:flex;align-items:center;gap:6px">
-        <span style="background:#ea580c;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">B</span>
-        Birim fiyattan (TEDAŞ tarifi)
+      <div class="date-row">
+        <select id="bill-month">
+          <option value="1">Ocak</option><option value="2">Şubat</option>
+          <option value="3">Mart</option><option value="4">Nisan</option>
+          <option value="5">Mayıs</option><option value="6">Haziran</option>
+          <option value="7">Temmuz</option><option value="8">Ağustos</option>
+          <option value="9">Eylül</option><option value="10">Ekim</option>
+          <option value="11">Kasım</option><option value="12">Aralık</option>
+        </select>
+        <input type="number" id="bill-year" min="2020" max="2099" style="width:90px">
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">kWh Birim Fiyatı (₺)</div>
-      <input type="number" id="kwh-price" placeholder="örn. 3.85" min="0" step="any" oninput="recalc()" style="width:100%">
     </div>
 
-    <!-- COMPUTED PRICE DISPLAY -->
-    <div id="computed-price"></div>
-    <div id="price-missing-hint" style="display:none;margin-top:8px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 12px;font-size:12px;color:var(--red);font-weight:500">
-      ⚠ Sayaç değerleri girildi ama fiyat bilgisi eksik! Lütfen yukarıdaki alanları doldurun.
+    <!-- STEP 2 -->
+    <div class="card">
+      <div class="step-header">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">Fiyat Bilgisi</div>
+          <div class="step-sub">Aşağıdaki iki yöntemden birini seçin</div>
+        </div>
+      </div>
+
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.7;color:#1e40af">
+        <strong style="display:block;margin-bottom:6px">Sadece bir yol seçin — ikisini birden doldurmayın:</strong>
+        <div style="display:flex;gap:8px;margin-bottom:4px">
+          <span style="background:#2563eb;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">A</span>
+          <span><strong>Fatura tutarını biliyorsanız:</strong> "Toplam Fatura Tutarı" + "Bina Toplam Tüketimi" alanlarını doldurun. Birim fiyat otomatik hesaplanır.</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <span style="background:#ea580c;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">B</span>
+          <span><strong>kWh birim fiyatını biliyorsanız:</strong> Sadece "kWh Birim Fiyatı" alanını doldurun.</span>
+        </div>
+      </div>
+
+      <div id="method-a" style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;transition:border-color .2s,background .2s">
+        <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#2563eb;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+          <span style="background:#2563eb;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">A</span>
+          Fatura tutarından
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div style="flex:1;min-width:140px">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Toplam Fatura Tutarı (₺)</div>
+            <input type="number" id="total-bill" placeholder="örn. 4800" min="0" step="any" oninput="recalc()" style="width:100%">
+          </div>
+          <div style="flex:1;min-width:140px">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Bina Toplam Tüketimi (kWh)</div>
+            <input type="number" id="total-kwh" placeholder="örn. 1245" min="0" step="any" oninput="recalc()" style="width:100%">
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align:center;font-size:11px;color:var(--muted);letter-spacing:2px;margin:4px 0">— VEYA —</div>
+
+      <div id="method-b" style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-top:10px;transition:border-color .2s,background .2s">
+        <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#ea580c;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+          <span style="background:#ea580c;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">B</span>
+          Birim fiyattan (TEDAŞ tarifi)
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">kWh Birim Fiyatı (₺)</div>
+        <input type="number" id="kwh-price" placeholder="örn. 3.85" min="0" step="any" oninput="recalc()" style="width:100%">
+      </div>
+
+      <div id="computed-price"></div>
+      <div id="price-missing-hint" style="display:none;margin-top:8px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 12px;font-size:12px;color:var(--red);font-weight:500">
+        ⚠ Sayaç değerleri girildi ama fiyat bilgisi eksik! Lütfen yukarıdaki alanları doldurun.
+      </div>
+      <div id="debug-box" style="display:none;margin-top:10px;background:#f8f9fa;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;font-family:monospace;color:#374151;line-height:1.8"></div>
     </div>
 
-    <!-- DEBUG BOX -->
-    <div id="debug-box" style="display:none;margin-top:10px;background:#f8f9fa;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;font-family:monospace;color:#374151;line-height:1.8"></div>
+    <!-- STEP 3 -->
+    <div class="card">
+      <div class="step-header">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">Sayaç Değerleri</div>
+          <div class="step-sub">Bu ayki sayaç okumalarını girin</div>
+        </div>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.85;color:#166534">
+        <strong style="display:block;margin-bottom:6px">📖 Nasıl çalışır?</strong>
+        <div style="display:grid;grid-template-columns:22px 1fr;gap:6px 8px;align-items:start">
+          <span style="background:#16a34a;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">1</span>
+          <span><b>"↓ Geçen ayın değerlerini yükle"</b> butonuna basın — en son kaydedilen sayaç değerleri otomatik yüklenir.</span>
+          <span style="background:#16a34a;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">2</span>
+          <span>Her daire için <b>bugünkü sayaç değerini</b> girin (sayaçtaki toplam birikimli rakam).</span>
+          <span style="background:#16a34a;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">3</span>
+          <span>Sistem otomatik hesaplar: <b>Bu ay tüketim = Bugünkü − Geçen ay</b><br><span style="color:#15803d;font-size:11px">Örnek: 13.680 − 12.450 = 1.230 kWh</span></span>
+          <span style="background:#16a34a;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">4</span>
+          <span>Hesap bittikten sonra <b>💾 Kaydet</b>'e basın — bu değerler gelecek ay referans olarak kullanılır.</span>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="loadPrev()" id="load-btn">↓ Geçen ayın değerlerini yükle</button>
+      </div>
+      <div id="load-status" style="font-size:12px;color:var(--muted);margin-bottom:8px;min-height:16px"></div>
+
+      <div class="block-label">Blok A</div>
+      <div class="units-grid" id="block-a"></div>
+      <div class="block-label">Blok B</div>
+      <div class="units-grid" id="block-b"></div>
+
+      <div id="warn"></div>
+
+      <div class="musT-box" id="musT-box" style="display:none">
+        <div class="musT-left">
+          <strong id="musT-kwh">— kWh</strong>
+          Müşterek Elektrik (ortak alan)
+        </div>
+        <div class="musT-right">
+          <div class="per">÷ 14 daire</div>
+          <div class="val" id="musT-per">— ₺</div>
+          <div class="per">daire başına aidat payı</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="card" id="ozet-card" style="display:none">
+      <div class="step-header">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-title">Hesap Özeti</div>
+          <div class="step-sub" id="ozet-sub"></div>
+        </div>
+      </div>
+      <table class="sum-table">
+        <thead><tr><th>Daire</th><th>kWh</th><th>Pay</th><th>Tutar</th></tr></thead>
+        <tbody id="sum-body"></tbody>
+        <tfoot><tr><td colspan="3">Toplam</td><td id="sum-total">—</td></tr></tfoot>
+      </table>
+
+      <div class="btn-row">
+        <button class="btn btn-save" onclick="saveAll()">💾 Kaydet</button>
+        <button class="btn btn-wa" onclick="sendWA()">💬 WhatsApp</button>
+        <button class="btn btn-ghost" onclick="dlPDF()">🖨 PDF</button>
+        <button class="btn btn-ghost" onclick="dlCSV()">⬇ CSV</button>
+      </div>
+    </div>
+
+    <!-- GEÇMİŞ -->
+    <div class="card">
+      <div class="card-title">📋 Geçmiş Kayıtlar</div>
+      <div id="gecmis-list"><div class="no-hist">Yükleniyor...</div></div>
+    </div>
+
   </div>
-
-  <!-- STEP 3 -->
-  <div class="card">
-    <div class="step-header">
-      <div class="step-num">3</div>
-      <div>
-        <div class="step-title">Sayaç Değerleri</div>
-        <div class="step-sub">Bu ayki sayaç okumalarını girin</div>
-      </div>
-    </div>
-    <!-- ANLEITUNG -->
-    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.85;color:#166534">
-      <strong style="display:block;margin-bottom:6px">📖 Nasıl çalışır?</strong>
-      <div style="display:grid;grid-template-columns:22px 1fr;gap:6px 8px;align-items:start">
-        <span style="background:#16a34a;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">1</span>
-        <span><b>"↓ Geçen ayın değerlerini yükle"</b> butonuna basın — en son kaydedilen sayaç değerleri otomatik yüklenir.</span>
-        <span style="background:#16a34a;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">2</span>
-        <span>Her daire için <b>bugünkü sayaç değerini</b> girin (sayaçtaki toplam birikimli rakam).</span>
-        <span style="background:#16a34a;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">3</span>
-        <span>Sistem otomatik hesaplar: <b>Bu ay tüketim = Bugünkü − Geçen ay</b><br><span style="color:#15803d;font-size:11px">Örnek: 13.680 − 12.450 = 1.230 kWh</span></span>
-        <span style="background:#16a34a;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">4</span>
-        <span>Hesap bittikten sonra <b>💾 Kaydet</b>'e basın — bu değerler gelecek ay referans olarak kullanılır.</span>
-      </div>
-    </div>
-
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;flex-wrap:wrap">
-      <button class="btn btn-primary" onclick="loadPrev()" id="load-btn">↓ Geçen ayın değerlerini yükle</button>
-    </div>
-    <div id="load-status" style="font-size:12px;color:var(--muted);margin-bottom:8px;min-height:16px"></div>
-
-    <div class="block-label">Blok A</div>
-    <div class="units-grid" id="block-a"></div>
-    <div class="block-label">Blok B</div>
-    <div class="units-grid" id="block-b"></div>
-
-    <div id="warn"></div>
-
-    <div class="musT-box" id="musT-box" style="display:none">
-      <div class="musT-left">
-        <strong id="musT-kwh">— kWh</strong>
-        Müşterek Elektrik (ortak alan)
-      </div>
-      <div class="musT-right">
-        <div class="per">÷ 14 daire</div>
-        <div class="val" id="musT-per">— ₺</div>
-        <div class="per">daire başına aidat payı</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- STEP 4 -->
-  <div class="card" id="ozet-card" style="display:none">
-    <div class="step-header">
-      <div class="step-num">4</div>
-      <div>
-        <div class="step-title">Hesap Özeti</div>
-        <div class="step-sub" id="ozet-sub"></div>
-      </div>
-    </div>
-    <table class="sum-table">
-      <thead><tr><th>Daire</th><th>kWh</th><th>Pay</th><th>Tutar</th></tr></thead>
-      <tbody id="sum-body"></tbody>
-      <tfoot><tr><td colspan="3">Toplam</td><td id="sum-total">—</td></tr></tfoot>
-    </table>
-
-    <div class="btn-row">
-      <button class="btn btn-save" onclick="saveAll()">💾 Kaydet</button>
-      <button class="btn btn-wa" onclick="sendWA()">💬 WhatsApp</button>
-      <button class="btn btn-ghost" onclick="dlPDF()">🖨 PDF</button>
-      <button class="btn btn-ghost" onclick="dlCSV()">⬇ CSV</button>
-    </div>
-  </div>
-
-  <!-- GEÇMİŞ -->
-  <div class="card">
-    <div class="card-title">📋 Geçmiş Kayıtlar</div>
-    <div id="gecmis-list"><div class="no-hist">Yükleniyor...</div></div>
-  </div>
-
 </div>
 
 <div class="toast" id="toast"></div>
@@ -307,78 +395,137 @@ const units = [
 ];
 
 let prevVals = {};
-let avgKwh = {}; // daire_id → average monthly consumption
+let avgKwh = {};
+let currentSession = null; // Stores the logged-in user's session token
 
-// ── SAFE NUMBER PARSER ──
-// Handles both "48000" and "48.000" (Turkish thousand-sep) and "48,5" (Turkish decimal)
-function parseNum(val) {
-  if (val === null || val === undefined || val === '') return 0;
-  let s = String(val).trim();
-  // If input type=number, the browser always gives us the raw numeric string
-  // But in case someone pastes "1.234,56" format:
-  // Count dots and commas
-  const dots = (s.match(/\./g) || []).length;
-  const commas = (s.match(/,/g) || []).length;
+// ── AUTH FUNCTIONS ──
 
-  if (dots > 1) {
-    // "1.234.567" → thousand separators, remove them
-    s = s.replace(/\./g, '');
-  } else if (commas > 1) {
-    // "1,234,567" → thousand separators, remove them
-    s = s.replace(/,/g, '');
-  } else if (dots === 1 && commas === 1) {
-    // "1.234,56" → TR format: remove dot, replace comma with dot
-    if (s.indexOf('.') < s.indexOf(',')) {
-      s = s.replace(/\./g, '').replace(',', '.');
-    } else {
-      // "1,234.56" → EN format: remove comma
-      s = s.replace(/,/g, '');
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const btn = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-err');
+
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Giriş yapılıyor...';
+
+  try {
+    const r = await fetch(SB + '/auth/v1/token?grant_type=password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': KEY
+      },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await r.json();
+
+    if (!r.ok) {
+      throw new Error(data.error_description || data.msg || 'Giriş başarısız');
     }
-  } else if (commas === 1 && dots === 0) {
-    // "48,5" → TR decimal → replace with dot
-    s = s.replace(',', '.');
+
+    currentSession = data.access_token;
+    document.getElementById('user-email-display').textContent = data.user?.email || email;
+
+    // Switch screens
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+
+    // Init app
+    initApp();
+
+  } catch(e) {
+    errEl.textContent = '⚠ ' + e.message;
+    errEl.style.display = 'block';
   }
-  // Now s should be a clean numeric string
-  const n = parseFloat(s);
-  return isNaN(n) ? 0 : n;
+
+  btn.disabled = false;
+  btn.textContent = 'Giriş Yap';
 }
 
-// Reads an input field safely
-function getVal(id) {
-  const el = document.getElementById(id);
-  if (!el) return 0;
-  // For type=number, .value is always en-US format (dot as decimal)
-  return parseNum(el.value);
+async function doLogout() {
+  try {
+    await fetch(SB + '/auth/v1/logout', {
+      method: 'POST',
+      headers: { 'apikey': KEY, 'Authorization': 'Bearer ' + currentSession }
+    });
+  } catch(e) {}
+
+  currentSession = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-password').value = '';
 }
 
-const now = new Date();
-document.getElementById('bill-month').value = now.getMonth()+1;
-document.getElementById('bill-year').value  = now.getFullYear();
+// Allow Enter key on login form
+document.getElementById('login-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+document.getElementById('login-email').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
 
-
-(async()=>{
-  const dot = document.getElementById('conn-dot');
-  try{
-    await api('sayac_okumalari?limit=1');
-    dot.classList.add('ok');
-    loadGecmis();
-  }catch{ dot.classList.add('err'); }
-})();
-
-async function api(path, opts={}){
+// ── API — now uses session token instead of anon key ──
+async function api(path, opts={}) {
   const {headers: extraHeaders={}, ...restOpts} = opts;
-  const r = await fetch(SB+'/rest/v1/'+path,{
+  const token = currentSession || KEY; // fallback to anon for initial check
+  const r = await fetch(SB + '/rest/v1/' + path, {
     ...restOpts,
-    headers:{
+    headers: {
       apikey: KEY,
-      Authorization: 'Bearer '+KEY,
+      Authorization: 'Bearer ' + token,
       'Content-Type': 'application/json',
       ...extraHeaders
     }
   });
-  if(!r.ok) throw new Error(await r.text());
-  return r.status===204?null:r.json();
+  if (!r.ok) throw new Error(await r.text());
+  return r.status === 204 ? null : r.json();
 }
+
+function initApp() {
+  const dot = document.getElementById('conn-dot');
+  api('sayac_okumalari?limit=1')
+    .then(() => { dot.classList.add('ok'); loadGecmis(); })
+    .catch(() => dot.classList.add('err'));
+
+  const now = new Date();
+  document.getElementById('bill-month').value = now.getMonth() + 1;
+  document.getElementById('bill-year').value = now.getFullYear();
+
+  renderUnits();
+  recalc();
+
+  ['bill-month','bill-year','total-bill','total-kwh','kwh-price'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.addEventListener('input', recalc); el.addEventListener('change', recalc); }
+  });
+}
+
+// ── SAFE NUMBER PARSER ──
+function parseNum(val) {
+  if (val === null || val === undefined || val === '') return 0;
+  let s = String(val).trim();
+  const dots = (s.match(/\./g) || []).length;
+  const commas = (s.match(/,/g) || []).length;
+  if (dots > 1) { s = s.replace(/\./g, ''); }
+  else if (commas > 1) { s = s.replace(/,/g, ''); }
+  else if (dots === 1 && commas === 1) {
+    if (s.indexOf('.') < s.indexOf(',')) { s = s.replace(/\./g, '').replace(',', '.'); }
+    else { s = s.replace(/,/g, ''); }
+  } else if (commas === 1 && dots === 0) { s = s.replace(',', '.'); }
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function getVal(id) {
+  const el = document.getElementById(id);
+  if (!el) return 0;
+  return parseNum(el.value);
+}
+
+const now = new Date();
 
 function renderUnits(){
   ['A','B'].forEach(bl=>{
@@ -407,20 +554,18 @@ async function loadPrev(){
   try{
     const data = await api('sayac_okumalari?select=daire_id,sayac_degeri,tarih&order=tarih.desc&limit=300');
     prevVals={};
-    // Group all readings per daire to compute average consumption
     const allByDaire = {};
     data.forEach(r=>{
       if(!prevVals[r.daire_id]) prevVals[r.daire_id]={val:parseFloat(r.sayac_degeri),tarih:r.tarih};
       if(!allByDaire[r.daire_id]) allByDaire[r.daire_id]=[];
       allByDaire[r.daire_id].push(parseFloat(r.sayac_degeri));
     });
-    // Compute avg monthly consumption (diff between consecutive readings)
     avgKwh={};
     Object.entries(allByDaire).forEach(([did, vals])=>{
       if(vals.length < 2) return;
       const diffs=[];
       for(let i=0;i<vals.length-1;i++) {
-        const d=vals[i]-vals[i+1]; // desc order so newer first
+        const d=vals[i]-vals[i+1];
         if(d>0) diffs.push(d);
       }
       if(diffs.length) avgKwh[did]=diffs.reduce((a,b)=>a+b,0)/diffs.length;
@@ -445,20 +590,13 @@ async function loadPrev(){
 }
 
 function recalc(){
-  // ── READ VALUES using safe parser ──
   const bill     = getVal('total-bill');
   const totalKwh = getVal('total-kwh');
   const dir      = getVal('kwh-price');
-
-  // ── DETERMINE PRICE ──
   let price = 0;
-  if (dir > 0) {
-    price = dir;
-  } else if (bill > 0 && totalKwh > 0) {
-    price = bill / totalKwh;
-  }
+  if (dir > 0) { price = dir; }
+  else if (bill > 0 && totalKwh > 0) { price = bill / totalKwh; }
 
-  // ── METHOD LOCK + HIGHLIGHT ──
   const mA = document.getElementById('method-a');
   const mB = document.getElementById('method-b');
   const inBill = document.getElementById('total-bill');
@@ -480,9 +618,7 @@ function recalc(){
     mB.style.borderColor=''; mB.style.background='';
   }
 
-  // ── COMPUTED PRICE HINT ──
   const cpEl = document.getElementById('computed-price');
-  // No trailing zeros: 1.0000 → "1", 3.85 → "3,85", 3.8512 → "3,8512"
   const fmtPrice = (n) => n.toLocaleString('tr-TR', {minimumFractionDigits:0, maximumFractionDigits:4});
   if (bill > 0 && totalKwh > 0 && dir === 0) {
     cpEl.textContent = `→ Hesaplanan birim fiyat: ${fmtPrice(price)} ₺/kWh`;
@@ -490,11 +626,8 @@ function recalc(){
   } else if (dir > 0) {
     cpEl.textContent = `→ Birim fiyat: ${fmtPrice(dir)} ₺/kWh`;
     cpEl.style.color = '#ea580c';
-  } else {
-    cpEl.textContent = '';
-  }
+  } else { cpEl.textContent = ''; }
 
-  // ── DEBUG BOX ──
   const dbg = document.getElementById('debug-box');
   if (bill > 0 || totalKwh > 0 || dir > 0) {
     dbg.style.display = 'block';
@@ -508,11 +641,8 @@ function recalc(){
         ? `→ Kontrol: ${fmtDbg(bill,2)} ₺ ÷ ${fmtDbg(totalKwh,2)} kWh = <b>${fmtDbg(price,4)} ₺/kWh</b>`
         : ''
     ].filter(Boolean).join('<br>');
-  } else {
-    dbg.style.display = 'none';
-  }
+  } else { dbg.style.display = 'none'; }
 
-  // ── PER-UNIT DIFFS + PLAUSIBILITY ──
   const unitKwhs = [];
   units.forEach(u=>{
     const cur  = getVal('u-'+u.id);
@@ -526,15 +656,10 @@ function recalc(){
     const card   = document.getElementById('uc-'+u.id);
     const warnEl = document.getElementById('uw-'+u.id);
 
-    // ── Plausibility checks ──
     let warning = '';
-    if (cur > 0 && prev > 0 && cur < prev) {
-      warning = '⚠ Yeni değer eski değerden küçük!';
-    } else if (diff > 0 && avgKwh[u.did] > 0 && diff > avgKwh[u.did] * 3) {
-      warning = `⚠ Ortalamadan 3x yüksek (ort. ${fmt(avgKwh[u.did])} kWh)`;
-    } else if (diff > 500) {
-      warning = `⚠ Çok yüksek tüketim — doğru mu?`;
-    }
+    if (cur > 0 && prev > 0 && cur < prev) { warning = '⚠ Yeni değer eski değerden küçük!'; }
+    else if (diff > 0 && avgKwh[u.did] > 0 && diff > avgKwh[u.did] * 3) { warning = `⚠ Ortalamadan 3x yüksek (ort. ${fmt(avgKwh[u.did])} kWh)`; }
+    else if (diff > 500) { warning = `⚠ Çok yüksek tüketim — doğru mu?`; }
 
     if (diffEl) diffEl.textContent = diff > 0 ? `Fark: ${fmt(diff)} kWh` : '';
     if (warnEl) { warnEl.textContent = warning; warnEl.style.display = warning ? 'block' : 'none'; }
@@ -547,23 +672,18 @@ function recalc(){
   const unitSum  = unitKwhs.reduce((a,b)=>a+b, 0);
   const sharedKwh = (totalKwh > 0 && unitSum <= totalKwh) ? totalKwh - unitSum : 0;
 
-  // ── WARN ──
   document.getElementById('warn').textContent =
     (totalKwh > 0 && unitSum > totalKwh + 0.01)
       ? `⚠ Daire toplamı (${fmt(unitSum)} kWh) bina toplamını aşıyor` : '';
 
-  // ── MÜŞTEREK BOX ──
   const mBox = document.getElementById('musT-box');
   if (totalKwh > 0) {
     mBox.style.display = 'flex';
     document.getElementById('musT-kwh').textContent = fmt(sharedKwh) + ' kWh';
     document.getElementById('musT-per').textContent =
       (price > 0 && sharedKwh > 0) ? fmtTL(sharedKwh * price / PARTIES) : '— ₺';
-  } else {
-    mBox.style.display = 'none';
-  }
+  } else { mBox.style.display = 'none'; }
 
-  // ── STEP 2 HIGHLIGHT if missing ──
   const step2card = document.querySelector('#method-a')?.closest('.card');
   if (step2card) {
     const missingPrice = price === 0 && unitSum > 0;
@@ -573,7 +693,6 @@ function recalc(){
     if (hint) hint.style.display = missingPrice ? 'block' : 'none';
   }
 
-  // ── SUMMARY ──
   const hasData = price > 0 && unitSum > 0;
   document.getElementById('ozet-card').style.display = hasData ? 'block' : 'none';
   if (!hasData) return;
@@ -618,7 +737,6 @@ function recalc(){
 }
 
 async function saveAll(){
-  // ── Check for warnings before saving ──
   const warnings = [];
   units.forEach(u => {
     const cur  = getVal('u-'+u.id);
@@ -627,21 +745,16 @@ async function saveAll(){
     if (cur < prev) warnings.push(`${u.id}: Yeni değer (${fmt(cur)}) < Eski değer (${fmt(prev)})`);
     else {
       const diff = cur - prev;
-      if (avgKwh[u.did] > 0 && diff > avgKwh[u.did] * 3)
-        warnings.push(`${u.id}: ${fmt(diff)} kWh — ortalamanın 3x üzerinde`);
-      else if (diff > 500)
-        warnings.push(`${u.id}: ${fmt(diff)} kWh — çok yüksek`);
+      if (avgKwh[u.did] > 0 && diff > avgKwh[u.did] * 3) warnings.push(`${u.id}: ${fmt(diff)} kWh — ortalamanın 3x üzerinde`);
+      else if (diff > 500) warnings.push(`${u.id}: ${fmt(diff)} kWh — çok yüksek`);
     }
   });
 
   if (warnings.length > 0) {
-    const msg = '⚠ Aşağıdaki değerler şüpheli görünüyor:\n\n' +
-      warnings.join('\n') +
-      '\n\nYine de kaydetmek istiyor musunuz?';
+    const msg = '⚠ Aşağıdaki değerler şüpheli görünüyor:\n\n' + warnings.join('\n') + '\n\nYine de kaydetmek istiyor musunuz?';
     if (!confirm(msg)) return;
   }
 
-  // ── Check price is set ──
   const price = getPrice();
   if (price === 0) {
     alert('⚠ Lütfen önce fiyat bilgisini girin!\n\nYa Toplam Fatura Tutarı + Bina Toplam Tüketimi\nYa da kWh Birim Fiyatı girilmeli.');
@@ -649,7 +762,6 @@ async function saveAll(){
     return;
   }
 
-  // ── Check nothing is empty ──
   const filled = units.filter(u => getVal('u-'+u.id) > 0);
   if (filled.length === 0) { toast('Hiç sayaç değeri girilmedi','err'); return; }
   if (filled.length < units.length) {
@@ -774,14 +886,6 @@ function toast(msg,type){
   el.style.background=type==='err'?'#dc2626':'#16a34a';
   setTimeout(()=>el.className='toast',2800);
 }
-
-['bill-month','bill-year','total-bill','total-kwh','kwh-price'].forEach(id=>{
-  const el=document.getElementById(id);
-  if(el){ el.addEventListener('input',recalc); el.addEventListener('change',recalc); }
-});
-
-renderUnits();
-recalc();
 </script>
 </body>
 </html>
