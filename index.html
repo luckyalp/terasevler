@@ -179,6 +179,26 @@
   .hist-detail { color:var(--muted); font-size:12px; }
   .hist-total { font-weight:700; color:var(--green); }
   .no-hist { color:var(--muted); font-size:13px; text-align:center; padding:16px; }
+
+  /* ── AUTOSAVE INDICATOR ── */
+  #autosave-indicator {
+    display:inline-flex; align-items:center; gap:5px;
+    font-size:11px; color:var(--muted); margin-left:8px;
+    transition:color .3s;
+  }
+  #autosave-indicator.saving { color:var(--accent); }
+  #autosave-indicator.saved  { color:var(--green); }
+  #autosave-indicator.error  { color:var(--red); }
+  #autosave-indicator .as-dot {
+    width:6px; height:6px; border-radius:50%; background:currentColor;
+    flex-shrink:0;
+  }
+  #autosave-indicator.saving .as-dot {
+    animation: as-pulse 0.8s infinite alternate;
+  }
+  @keyframes as-pulse {
+    from { opacity:0.3; } to { opacity:1; }
+  }
 </style>
 </head>
 <body>
@@ -320,12 +340,17 @@
           <span style="background:#16a34a;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">3</span>
           <span>Sistem otomatik hesaplar: <b>Bu ay tüketim = Bugünkü − Geçen ay</b><br><span style="color:#15803d;font-size:11px">Örnek: 13.680 − 12.450 = 1.230 kWh</span></span>
           <span style="background:#16a34a;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">4</span>
-          <span>Hesap bittikten sonra <b>💾 Kaydet</b>'e basın — bu değerler gelecek ay referans olarak kullanılır.</span>
+          <span>Değerleri girdikten sonra <b>otomatik kaydedilir</b>. Sağ altta <b>✓ kaydedildi</b> yazısı çıkınca tamam. İstersen <b>💬 WhatsApp</b>'a bas — o da tekrar kaydeder.</span>
         </div>
       </div>
 
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="loadPrev()" id="load-btn">↓ Geçen ayın değerlerini yükle</button>
+        <!-- AUTOSAVE INDICATOR -->
+        <span id="autosave-indicator" title="Otomatik kayıt durumu">
+          <span class="as-dot"></span>
+          <span id="autosave-text">—</span>
+        </span>
       </div>
       <div id="load-status" style="font-size:12px;color:var(--muted);margin-bottom:8px;min-height:16px"></div>
 
@@ -396,7 +421,81 @@ const units = [
 
 let prevVals = {};
 let avgKwh = {};
-let currentSession = null; // Stores the logged-in user's session token
+let currentSession = null;
+
+// ── AUTOSAVE ──────────────────────────────────────────────────
+let autosaveTimer = null;
+const AUTOSAVE_DELAY = 1500; // ms after last keystroke
+
+function scheduleAutosave() {
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(doAutosave, AUTOSAVE_DELAY);
+  setAutosaveStatus('pending', 'Kaydediliyor...');
+}
+
+function setAutosaveStatus(state, text) {
+  const ind = document.getElementById('autosave-indicator');
+  const txt = document.getElementById('autosave-text');
+  if (!ind || !txt) return;
+  ind.className = '';
+  ind.classList.add(state);
+  txt.textContent = text;
+}
+
+async function doAutosave() {
+  if (!currentSession) return;
+
+  const price = getPrice();
+  const filledUnits = units.filter(u => getVal('u-'+u.id) > 0);
+
+  // Only autosave when there's actual meter data entered
+  if (filledUnits.length === 0) {
+    setAutosaveStatus('', '—');
+    return;
+  }
+
+  // Skip autosave if any unit has invalid values (new < prev)
+  const hasInvalid = units.some(u => {
+    const cur  = getVal('u-'+u.id);
+    const prev = prevVals[u.did]?.val || 0;
+    return cur > 0 && prev > 0 && cur < prev;
+  });
+  if (hasInvalid) {
+    setAutosaveStatus('error', '⚠ Geçersiz değer');
+    return;
+  }
+
+  setAutosaveStatus('saving', 'Kaydediliyor...');
+
+  const tarih = new Date().toISOString().split('T')[0];
+  let saved = 0;
+  let failed = 0;
+
+  for (const u of filledUnits) {
+    const cur = getVal('u-'+u.id);
+    try {
+      await api('sayac_okumalari', {
+        method: 'POST',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({ daire_id: u.did, sayac_degeri: cur, tarih })
+      });
+      saved++;
+    } catch(e) {
+      failed++;
+      console.warn('Autosave failed for', u.id, e);
+    }
+  }
+
+  if (failed === 0) {
+    const now = new Date();
+    const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    setAutosaveStatus('saved', `✓ ${timeStr} kaydedildi`);
+    loadGecmis();
+  } else {
+    setAutosaveStatus('error', `⚠ ${failed} hata`);
+  }
+}
+// ─────────────────────────────────────────────────────────────
 
 // ── AUTH FUNCTIONS ──
 
@@ -429,11 +528,9 @@ async function doLogin() {
     currentSession = data.access_token;
     document.getElementById('user-email-display').textContent = data.user?.email || email;
 
-    // Switch screens
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
 
-    // Init app
     initApp();
 
   } catch(e) {
@@ -459,7 +556,6 @@ async function doLogout() {
   document.getElementById('login-password').value = '';
 }
 
-// Allow Enter key on login form
 document.getElementById('login-password').addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin();
 });
@@ -467,10 +563,10 @@ document.getElementById('login-email').addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin();
 });
 
-// ── API — now uses session token instead of anon key ──
+// ── API ──
 async function api(path, opts={}) {
   const {headers: extraHeaders={}, ...restOpts} = opts;
-  const token = currentSession || KEY; // fallback to anon for initial check
+  const token = currentSession || KEY;
   const r = await fetch(SB + '/rest/v1/' + path, {
     ...restOpts,
     headers: {
@@ -537,7 +633,7 @@ function renderUnits(){
       d.innerHTML=`
         <div class="unit-name">${u.id}</div>
         <div class="unit-right">
-          <input type="number" id="u-${u.id}" placeholder="Sayaç" min="0" step="any" oninput="recalc()">
+          <input type="number" id="u-${u.id}" placeholder="Sayaç" min="0" step="any" oninput="recalc(); scheduleAutosave();">
           <div class="unit-prev" id="up-${u.id}"></div>
           <div class="unit-diff" id="ud-${u.id}"></div>
           <div class="unit-warn" id="uw-${u.id}"></div>
@@ -736,7 +832,7 @@ function recalc(){
   document.getElementById('sum-total').textContent = fmtTL(grand);
 }
 
-async function saveAll(){
+async function saveAll(silent=false){
   const warnings = [];
   units.forEach(u => {
     const cur  = getVal('u-'+u.id);
@@ -750,21 +846,23 @@ async function saveAll(){
     }
   });
 
-  if (warnings.length > 0) {
+  if (!silent && warnings.length > 0) {
     const msg = '⚠ Aşağıdaki değerler şüpheli görünüyor:\n\n' + warnings.join('\n') + '\n\nYine de kaydetmek istiyor musunuz?';
     if (!confirm(msg)) return;
   }
 
   const price = getPrice();
   if (price === 0) {
-    alert('⚠ Lütfen önce fiyat bilgisini girin!\n\nYa Toplam Fatura Tutarı + Bina Toplam Tüketimi\nYa da kWh Birim Fiyatı girilmeli.');
-    document.getElementById('total-bill').focus();
+    if (!silent) {
+      alert('⚠ Lütfen önce fiyat bilgisini girin!\n\nYa Toplam Fatura Tutarı + Bina Toplam Tüketimi\nYa da kWh Birim Fiyatı girilmeli.');
+      document.getElementById('total-bill').focus();
+    }
     return;
   }
 
   const filled = units.filter(u => getVal('u-'+u.id) > 0);
-  if (filled.length === 0) { toast('Hiç sayaç değeri girilmedi','err'); return; }
-  if (filled.length < units.length) {
+  if (filled.length === 0) { if (!silent) toast('Hiç sayaç değeri girilmedi','err'); return; }
+  if (!silent && filled.length < units.length) {
     const missing = units.filter(u => !getVal('u-'+u.id)).map(u=>u.id).join(', ');
     if (!confirm(`Şu daireler boş: ${missing}\n\nDevam edilsin mi?`)) return;
   }
@@ -784,8 +882,8 @@ async function saveAll(){
     } catch(e) { console.error(u.id, e); }
   }
   toast(`${saved} sayaç kaydedildi ✓`, 'ok');
-  loadGecmis();
-  loadPrev();
+  if (!silent) { loadGecmis(); loadPrev(); }
+  else { loadGecmis(); }
 }
 
 async function loadGecmis(){
@@ -832,7 +930,10 @@ function buildText(){
   return lines.join('\n');
 }
 
-function sendWA(){ window.open('https://wa.me/?text='+encodeURIComponent(buildText()),'_blank'); }
+async function sendWA(){
+  await saveAll(true);
+  window.open('https://wa.me/?text='+encodeURIComponent(buildText()),'_blank');
+}
 
 function dlCSV(){
   const price     = getPrice();
