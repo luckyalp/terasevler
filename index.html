@@ -210,15 +210,14 @@
   <div class="login-card">
     <div class="login-logo">⚡</div>
     <div class="login-title">Elektrik Hesaplayıcı</div>
-    <div class="login-sub">Lütfen giriş yapın</div>
+    <div class="login-sub">PIN kodunu girin</div>
 
     <div class="login-field">
-      <label>E-POSTA</label>
-      <input type="email" id="login-email" placeholder="admin@example.com" autocomplete="email">
-    </div>
-    <div class="login-field">
-      <label>ŞİFRE</label>
-      <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+      <label>PIN</label>
+      <input type="password" id="login-pin" placeholder="••••" autocomplete="off"
+        maxlength="8" inputmode="numeric"
+        style="font-size:28px;letter-spacing:10px;text-align:center;padding:14px;"
+        oninput="this.value=this.value.replace(/[^0-9]/g,'')">
     </div>
     <button class="login-btn" id="login-btn" onclick="doLogin()">Giriş Yap</button>
     <div class="login-err" id="login-err"></div>
@@ -231,7 +230,7 @@
 <div id="app">
 
   <div class="user-bar">
-    Giriş yapıldı: <span id="user-email-display">—</span>
+    <span>🔒 Giriş yapıldı</span>
     <button class="logout-btn" onclick="doLogout()">Çıkış</button>
   </div>
 
@@ -499,79 +498,50 @@ async function doAutosave() {
 
 // ── AUTH FUNCTIONS ──
 
-async function doLogin() {
-  const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value;
+// ── PIN AUTH ──
+// PIN hier ändern:
+const CORRECT_PIN = '1234';
+
+function doLogin() {
+  const pin = document.getElementById('login-pin').value.trim();
   const btn = document.getElementById('login-btn');
   const errEl = document.getElementById('login-err');
 
   errEl.style.display = 'none';
-  btn.disabled = true;
-  btn.textContent = 'Giriş yapılıyor...';
 
-  try {
-    const r = await fetch(SB + '/auth/v1/token?grant_type=password', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': KEY
-      },
-      body: JSON.stringify({ email, password })
-    });
-
-    const data = await r.json();
-
-    if (!r.ok) {
-      throw new Error(data.error_description || data.msg || 'Giriş başarısız');
-    }
-
-    currentSession = data.access_token;
-    document.getElementById('user-email-display').textContent = data.user?.email || email;
-
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-
-    initApp();
-
-  } catch(e) {
-    errEl.textContent = '⚠ ' + e.message;
+  if (pin !== CORRECT_PIN) {
+    errEl.textContent = '⚠ Yanlış PIN. Tekrar deneyin.';
     errEl.style.display = 'block';
+    document.getElementById('login-pin').value = '';
+    document.getElementById('login-pin').focus();
+    return;
   }
 
-  btn.disabled = false;
-  btn.textContent = 'Giriş Yap';
+  currentSession = true; // just a flag, no token needed
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  initApp();
 }
 
-async function doLogout() {
-  try {
-    await fetch(SB + '/auth/v1/logout', {
-      method: 'POST',
-      headers: { 'apikey': KEY, 'Authorization': 'Bearer ' + currentSession }
-    });
-  } catch(e) {}
-
+function doLogout() {
   currentSession = null;
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
-  document.getElementById('login-password').value = '';
+  document.getElementById('login-pin').value = '';
 }
 
-document.getElementById('login-password').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doLogin();
-});
-document.getElementById('login-email').addEventListener('keydown', e => {
+document.getElementById('login-pin').addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin();
 });
 
-// ── API ──
+// ── API — uses anon key (PIN protects the UI, anon key protects Supabase) ──
 async function api(path, opts={}) {
   const {headers: extraHeaders={}, ...restOpts} = opts;
-  const token = currentSession || KEY;
   const r = await fetch(SB + '/rest/v1/' + path, {
     ...restOpts,
     headers: {
       apikey: KEY,
-      Authorization: 'Bearer ' + token,
+      Authorization: 'Bearer ' + KEY,
       'Content-Type': 'application/json',
       ...extraHeaders
     }
