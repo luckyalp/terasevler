@@ -292,7 +292,7 @@
           Birim fiyattan (TEDAŞ tarifi)
         </div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:4px">kWh Birim Fiyatı (₺)</div>
-        <input type="number" id="kwh-price" placeholder="örn. 3.85" min="0" step="any" oninput="recalc()" style="width:100%">
+        <input type="number" id="kwh-price" placeholder="örn. 7.00" min="0" step="any" value="7" oninput="recalc()" style="width:100%">
       </div>
 
       <div id="computed-price"></div>
@@ -562,12 +562,23 @@ async function loadPrev(){
 }
 
 function recalc(){
+  const FIXED_KWH_PRICE = 7; // sabit ₺/kWh — buradan değiştir
   const bill     = getVal('total-bill');
-  const totalKwh = getVal('total-kwh');
+  const totalKwhInput = getVal('total-kwh');
   const dir      = getVal('kwh-price');
+
+  // Determine price and effective total kWh
   let price = 0;
-  if (dir > 0) { price = dir; }
-  else if (bill > 0 && totalKwh > 0) { price = bill / totalKwh; }
+  let effectiveTotalKwh = totalKwhInput;
+  if (dir > 0) {
+    price = dir;
+  } else if (bill > 0 && totalKwhInput > 0) {
+    price = bill / totalKwhInput;
+  } else if (bill > 0) {
+    price = FIXED_KWH_PRICE;
+    effectiveTotalKwh = bill / FIXED_KWH_PRICE;
+  }
+  const totalKwh = effectiveTotalKwh;
 
   const mA = document.getElementById('method-a');
   const mB = document.getElementById('method-b');
@@ -579,7 +590,7 @@ function recalc(){
     mA.style.opacity='0.4'; mA.style.pointerEvents='none';
     mB.style.borderColor='#ea580c'; mB.style.background='#fff7ed';
     inBill.value=''; inKwh.value='';
-  } else if (bill > 0 || totalKwh > 0) {
+  } else if (bill > 0 || totalKwhInput > 0) {
     mB.style.opacity='0.4'; mB.style.pointerEvents='none';
     mA.style.borderColor='#2563eb'; mA.style.background='#eff6ff';
     inDir.value='';
@@ -592,26 +603,26 @@ function recalc(){
 
   const cpEl = document.getElementById('computed-price');
   const fmtPrice = (n) => n.toLocaleString('tr-TR', {minimumFractionDigits:0, maximumFractionDigits:4});
-  if (bill > 0 && totalKwh > 0 && dir === 0) {
+  if (bill > 0 && totalKwhInput > 0 && dir === 0) {
     cpEl.textContent = `→ Hesaplanan birim fiyat: ${fmtPrice(price)} ₺/kWh`;
     cpEl.style.color = '#2563eb';
+  } else if (bill > 0 && totalKwhInput === 0 && dir === 0) {
+    cpEl.textContent = `→ Sabit fiyat kullanılıyor: ${fmtPrice(FIXED_KWH_PRICE)} ₺/kWh · Toplam: ${fmtPrice(effectiveTotalKwh)} kWh`;
+    cpEl.style.color = '#ea580c';
   } else if (dir > 0) {
     cpEl.textContent = `→ Birim fiyat: ${fmtPrice(dir)} ₺/kWh`;
     cpEl.style.color = '#ea580c';
   } else { cpEl.textContent = ''; }
 
   const dbg = document.getElementById('debug-box');
-  if (bill > 0 || totalKwh > 0 || dir > 0) {
+  if (bill > 0 || totalKwhInput > 0 || dir > 0) {
     dbg.style.display = 'block';
     const fmtDbg = (n, dec=2) => n.toLocaleString('tr-TR', {minimumFractionDigits:0, maximumFractionDigits:dec});
     dbg.innerHTML = [
       `Fatura: <b>${fmtDbg(bill,2)} ₺</b>`,
-      `Toplam kWh: <b>${fmtDbg(totalKwh,2)} kWh</b>`,
-      `Birim fiyat girilen: <b>${fmtDbg(dir,4)} ₺/kWh</b>`,
-      `→ Kullanılan birim fiyat: <b style="color:var(--accent)">${fmtDbg(price,4)} ₺/kWh</b>`,
-      price > 0 && totalKwh > 0 && dir === 0
-        ? `→ Kontrol: ${fmtDbg(bill,2)} ₺ ÷ ${fmtDbg(totalKwh,2)} kWh = <b>${fmtDbg(price,4)} ₺/kWh</b>`
-        : ''
+      `Toplam kWh (girilen): <b>${fmtDbg(totalKwhInput,2)} kWh</b>`,
+      totalKwhInput === 0 && bill > 0 ? `Toplam kWh (hesaplanan): <b>${fmtDbg(effectiveTotalKwh,2)} kWh</b>` : '',
+      `Birim fiyat: <b style="color:var(--accent)">${fmtDbg(price,4)} ₺/kWh</b>`,
     ].filter(Boolean).join('<br>');
   } else { dbg.style.display = 'none'; }
 
@@ -847,7 +858,10 @@ function getPrice(){
   const bill = getVal('total-bill');
   const tot  = getVal('total-kwh');
   const dir  = getVal('kwh-price');
-  return dir > 0 ? dir : (bill > 0 && tot > 0 ? bill / tot : 0);
+  if (dir > 0) return dir;
+  if (bill > 0 && tot > 0) return bill / tot;
+  if (bill > 0) return 7; // sabit fiyat ₺/kWh — sadece fatura girilmişse
+  return 0;
 }
 function getMonthStr(){
   const m = parseInt(document.getElementById('bill-month').value) || 1;
