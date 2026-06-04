@@ -180,25 +180,7 @@
   .hist-total { font-weight:700; color:var(--green); }
   .no-hist { color:var(--muted); font-size:13px; text-align:center; padding:16px; }
 
-  /* ── AUTOSAVE INDICATOR ── */
-  #autosave-indicator {
-    display:inline-flex; align-items:center; gap:5px;
-    font-size:11px; color:var(--muted); margin-left:8px;
-    transition:color .3s;
-  }
-  #autosave-indicator.saving { color:var(--accent); }
-  #autosave-indicator.saved  { color:var(--green); }
-  #autosave-indicator.error  { color:var(--red); }
-  #autosave-indicator .as-dot {
-    width:6px; height:6px; border-radius:50%; background:currentColor;
-    flex-shrink:0;
-  }
-  #autosave-indicator.saving .as-dot {
-    animation: as-pulse 0.8s infinite alternate;
-  }
-  @keyframes as-pulse {
-    from { opacity:0.3; } to { opacity:1; }
-  }
+
 </style>
 </head>
 <body>
@@ -345,11 +327,7 @@
 
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="loadPrev()" id="load-btn">↓ Geçen ayın değerlerini yükle</button>
-        <!-- AUTOSAVE INDICATOR -->
-        <span id="autosave-indicator" title="Otomatik kayıt durumu">
-          <span class="as-dot"></span>
-          <span id="autosave-text">—</span>
-        </span>
+
       </div>
       <div id="load-status" style="font-size:12px;color:var(--muted);margin-bottom:8px;min-height:16px"></div>
 
@@ -422,79 +400,7 @@ let prevVals = {};
 let avgKwh = {};
 let currentSession = null;
 
-// ── AUTOSAVE ──────────────────────────────────────────────────
-let autosaveTimer = null;
-const AUTOSAVE_DELAY = 1500; // ms after last keystroke
 
-function scheduleAutosave() {
-  clearTimeout(autosaveTimer);
-  autosaveTimer = setTimeout(doAutosave, AUTOSAVE_DELAY);
-  setAutosaveStatus('pending', 'Kaydediliyor...');
-}
-
-function setAutosaveStatus(state, text) {
-  const ind = document.getElementById('autosave-indicator');
-  const txt = document.getElementById('autosave-text');
-  if (!ind || !txt) return;
-  ind.className = '';
-  ind.classList.add(state);
-  txt.textContent = text;
-}
-
-async function doAutosave() {
-  if (!currentSession) return;
-
-  const price = getPrice();
-  const filledUnits = units.filter(u => getVal('u-'+u.id) > 0);
-
-  // Only autosave when there's actual meter data entered
-  if (filledUnits.length === 0) {
-    setAutosaveStatus('', '—');
-    return;
-  }
-
-  // Skip autosave if any unit has invalid values (new < prev)
-  const hasInvalid = units.some(u => {
-    const cur  = getVal('u-'+u.id);
-    const prev = prevVals[u.did]?.val || 0;
-    return cur > 0 && prev > 0 && cur < prev;
-  });
-  if (hasInvalid) {
-    setAutosaveStatus('error', '⚠ Geçersiz değer');
-    return;
-  }
-
-  setAutosaveStatus('saving', 'Kaydediliyor...');
-
-  const tarih = new Date().toISOString().split('T')[0];
-  let saved = 0;
-  let failed = 0;
-
-  for (const u of filledUnits) {
-    const cur = getVal('u-'+u.id);
-    try {
-      await api('sayac_okumalari', {
-        method: 'POST',
-        headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify({ daire_id: u.did, sayac_degeri: cur, tarih })
-      });
-      saved++;
-    } catch(e) {
-      failed++;
-      console.warn('Autosave failed for', u.id, e);
-    }
-  }
-
-  if (failed === 0) {
-    const now = new Date();
-    const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-    setAutosaveStatus('saved', `✓ ${timeStr} kaydedildi`);
-    loadGecmis();
-  } else {
-    setAutosaveStatus('error', `⚠ ${failed} hata`);
-  }
-}
-// ─────────────────────────────────────────────────────────────
 
 // ── AUTH FUNCTIONS ──
 
@@ -603,7 +509,7 @@ function renderUnits(){
       d.innerHTML=`
         <div class="unit-name">${u.id}</div>
         <div class="unit-right">
-          <input type="number" id="u-${u.id}" placeholder="Sayaç" min="0" step="any" oninput="recalc(); scheduleAutosave();">
+          <input type="number" id="u-${u.id}" placeholder="Sayaç" min="0" step="any" oninput="recalc()">
           <div class="unit-prev" id="up-${u.id}"></div>
           <div class="unit-diff" id="ud-${u.id}"></div>
           <div class="unit-warn" id="uw-${u.id}"></div>
